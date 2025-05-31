@@ -1,0 +1,64 @@
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+TITLE
+Charged particle fluence inside ice
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+DEFAULTS                                                              PRECISION
+BEAM      *        *                                                  *        *
+BEAMPOS          0.0       0.0       0.0
+DISCARD     -NEUTRIM -ANEUTRIM  -NEUTRIT -ANEUTRIT  -NEUTRIE -ANEUTRIE
+PHYSICS         -1.0      -1.0       2.0       2.0       0.0       1.0NEUTRINO
+* >>>>> AF
+*  Extra physics cards recommended:
+*   Heavy fragment evaporation/fragmentation
+PHYSICS          3.0                                                  EVAPORAT
+*   Coalescence (cascade d,t,h,alpha production):
+PHYSICS          1.0                                                  COALESCE
+*   Approximate deuteron interaction model below 150 MeV/n
+PHYSICS           1.     0.005      0.15       2.0       2.0        2.IONSPLIT
+*   Photonuclear reactions activated
+PHOTONUC         1.0                         3.0    @LASTMAT
+*   Electronuclear reactions activated
+PHOTONUC         1.0                         3.0    @LASTMAT          ELECTNUC
+*   Full transport of heavy ions 
+IONTRANS    HEAVYION
+* <<<<< AF
+GEOBEGIN                                                              COMBNAME
+  0 0                       A simple ice target inside black hole
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+RPP bhole    -2000.0   +2000.0   -2000.0   +2000.0    -100.0  +10000.0
+RPP ice      -1000.0   +1000.0   -1000.0   +1000.0     -50.0   +5000.0
+END
+* black hole
+regBH    3     +bhole -ice
+* ice
+regice   3     +ice  
+END
+GEOEND
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+MATERIAL         1.0       0.0 0.0000899       0.0       0.0       0.0  HYDROGEN
+MATERIAL         8.0       0.0   0.00143       0.0       0.0       0.0  OXYGEN
+MATERIAL         0.0       0.0     0.917       0.0       0.0       0.0  ICE
+COMPOUND         2.0  HYDROGEN       1.0    OXYGEN       0.0       0.0  ICE
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+*  ICE
+ASSIGNMAT        ICE    regice
+*  External Black Hole
+ASSIGNMAT   BLCKHOLE     regBH
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+* e+e- and gamma production threshold set at 1 MeV
+EMFCUT        -0.001     0.001       1.0       ICE                    PROD-CUT
+* Cartesian binning of the pion fluence inside and around the target 
+* >>>>> AF
+*  Charged particle tracklength weighted for Cerenkov:
+USRBIN          10.0  ALL-CHAR     -26.0     500.0     500.0    5000.0  Cerfluence
+USRBIN        -500.0    -500.0       0.0       1.0       1.0     500.0   &
+*  This card activates the fluscw user routine (which must be linked of course)
+USERWEIG                             1.0
+* <<<<< AF
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+PHYSICS          1.0       0.0       0.0       0.0       0.0       0.0CHARMDECay
+RANDOMIZE        1.0*        *
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
+START            1.0
+STOP
+

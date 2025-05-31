@@ -1,0 +1,16 @@
+universe = vanilla
+executable = /home/icrawsha/DataGen/DataGen_executable_PION.sh
+arguments = $(Item)
+
+request_cpus = 1
+request_memory = 2GB
+request_disk = 310KB
+
+output = outPION.$(Item)
+error = errPION.$(Item)
+log = logPION.$(Item)
+
+
+should_transfer_files = YES
+
+queue from seq 1 10000 |

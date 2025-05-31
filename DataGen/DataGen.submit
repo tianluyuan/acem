@@ -1,0 +1,17 @@
+universe = vanilla
+executable = /home/icrawsha/DataGen/DataGen_executable.sh
+arguments = $(Item)
+
+request_cpus = 5
+request_memory = 5GB
+request_disk = 30MB
+
+output = out.$(Item)
+error = err.$(Item)
+log = log.$(Item)
+
+
+should_transfer_files = YES
+
+queue from seq 1 100 |
+
