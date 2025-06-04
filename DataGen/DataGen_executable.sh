@@ -1,21 +1,24 @@
 #!/usr/bin/bash
 
 source /home/icrawsha/.venv/bin/activate
-export FLUPRO=/data/user/eyildizci/fluka
+export FLUPRO=/data/user/tyuan/sim/fluka
 export FLUFOR=gfortran
 num_runs=10
 seed_num=$(($1 * $num_runs))
-mkdir -p /home/icrawsha/DataGen/DataOutputs/job$1inps
-mkdir -p /home/icrawsha/DataGen/DataOutputs/job$1txts
+dataoutputdir=DataOutputs_$(head -n1 inp_gen.csv)
+dataoutputdir=`realpath ${dataoutputdir}`
+echo "saving to " ${dataoutputdir}
+mkdir -p ${dataoutputdir}/job$1inps
+mkdir -p ${dataoutputdir}/job$1txts
 
-python /home/icrawsha/DataGen/gen_inp.py -s $num_runs -ss $seed_num -i /home/icrawsha/DataGen/inp_gen.csv -o /home/icrawsha/DataGen/DataOutputs/job$1inps -l True
-for file in /home/icrawsha/DataGen/DataOutputs/job$1inps/*.inp; do
-    /home/icrawsha/DataGen/inp2txt.sh $file /home/icrawsha/DataGen/DataOutputs/job$1txts 50
+python gen_inp.py -s $num_runs -ss $seed_num -i inp_gen.csv -o ${dataoutputdir}/job$1inps -l True
+for file in ${dataoutputdir}/job$1inps/*.inp; do
+    ./inp2txt.sh $file ${dataoutputdir}/job$1txts 50
 done
-rm /home/icrawsha/DataGen/DataOutputs/job$1txts/input.txt
-rm -r /home/icrawsha/DataGen/DataOutputs/job$1inps
-for file in /home/icrawsha/DataGen/DataOutputs/job$1txts/*.txt; do
-    python /home/icrawsha/DataGen/add_to_csv.py -txt $file -csv /home/icrawsha/DataGen/DataOutputs/job$1.csv
+rm ${dataoutputdir}/job$1txts/input.txt
+rm -r ${dataoutputdir}/job$1inps
+for file in ${dataoutputdir}/job$1txts/*.txt; do
+    python add_to_csv.py -txt $file -csv ${dataoutputdir}/job$1.csv
 	rm $file
 done
 

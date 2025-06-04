@@ -44,7 +44,7 @@ useLogScale = args.useLogScale
 fr = pd.read_csv(inputFile)#read input parameters
 seeds = np.arange(ss,s+ss)#create list of random seeds
 #read template .inp file and split at fill-in markers
-with open('/home/icrawsha/DataGen/inpBase.txt','r') as f:
+with open('inpBase.txt','r') as f:
     base = f.read().split("*        *")
 
 for particle in fr.columns:#for each particle type
@@ -52,7 +52,7 @@ for particle in fr.columns:#for each particle type
         if useLogScale:
             energy = 10**energy_listing
         else:
-            energy = enery_listing
+            energy = energy_listing
         energyStr = format_energy(energy)
         for seed in seeds:#for each seed number
 			#make the file

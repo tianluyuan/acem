@@ -2,7 +2,7 @@
 
 # $N=number of runs
 # $F=file name without ".inp"
-export FLUPRO=/data/user/eyildizci/fluka
+export FLUPRO=/data/user/tyuan/sim/fluka
 export FLUFOR=gfortran
 # Check if both parameters are provided
 if [ $# -ne 3 ]; then
@@ -21,7 +21,7 @@ num_runs="$3"
 og_dir=$(pwd) # save original directory
 cp $file_path $out_dir #copy .inp file into directory
 cd $out_dir # move to output directory to run fluka in
-/data/user/eyildizci/fluka/flutil/rfluka -M$num_runs $F
+${FLUPRO}/flutil/rfluka -e ${FLUPRO}/flukadpm3 -M$num_runs $F
 rm ran${F}*
 for ((i = 1; i <= num_runs; i++)); do
     f_i=$(printf "%03d" $i) #formatted index (three digits)
@@ -31,13 +31,13 @@ ${F}${f_i}_fort.26
 ${F}${f_i}.bnn
 
 EOF
-	/data/user/eyildizci/fluka/flutil/usbsuw < input.txt > /dev/null
+	${FLUPRO}/flutil/usbsuw < input.txt > /dev/null
 	cat <<EOF > input.txt
 ${F}${f_i}.bnn
 ${F}${f_i}.txt
 
 EOF
-	/data/user/eyildizci/fluka/flutil/usbrea < input.txt > /dev/null
+	${FLUPRO}/flutil/usbrea < input.txt > /dev/null
 	rm ${F}${f_i}_fort.26
 	rm ${F}${f_i}.bnn
 	rm ${F}${f_i}.err
