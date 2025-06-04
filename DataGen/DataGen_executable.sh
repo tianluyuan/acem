@@ -1,9 +1,13 @@
 #!/usr/bin/bash
 
-source /home/icrawsha/.venv/bin/activate
+source /home/tyuan/.virtualenvs/v/bin/activate
 export FLUPRO=/data/user/tyuan/sim/fluka
 export FLUFOR=gfortran
-num_runs=10
+
+cd $(dirname $0)
+echo $PWD
+
+num_runs=1
 seed_num=$(($1 * $num_runs))
 dataoutputdir=DataOutputs_$(head -n1 inp_gen.csv)
 dataoutputdir=`realpath ${dataoutputdir}`
@@ -13,12 +17,12 @@ mkdir -p ${dataoutputdir}/job$1txts
 
 python gen_inp.py -s $num_runs -ss $seed_num -i inp_gen.csv -o ${dataoutputdir}/job$1inps -l True
 for file in ${dataoutputdir}/job$1inps/*.inp; do
-    ./inp2txt.sh $file ${dataoutputdir}/job$1txts 50
+    ./inp2txt.sh $file ${dataoutputdir}/job$1txts 1
 done
 rm ${dataoutputdir}/job$1txts/input.txt
 rm -r ${dataoutputdir}/job$1inps
 for file in ${dataoutputdir}/job$1txts/*.txt; do
-    python add_to_csv.py -txt $file -csv ${dataoutputdir}/job$1.csv
+    python add_to_csv.py -txt $file -csv ${dataoutputdir}/job$1_`basename ${file%_[0-9]*_[0-9]*\.txt}`.csv
 	rm $file
 done
 

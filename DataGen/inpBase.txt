@@ -46,7 +46,7 @@ ASSIGNMAT        ICE    regice
 ASSIGNMAT   BLCKHOLE     regBH
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
 * e+e- and gamma production threshold set at 1 MeV
-EMFCUT        -0.001     0.001       1.0       ICE                    PROD-CUT
+EMFCUT     -0.000264  0.001286       1.0       ICE                    PROD-CUT
 * Cartesian binning of the pion fluence inside and around the target 
 * >>>>> AF
 *  Charged particle tracklength weighted for Cerenkov:
