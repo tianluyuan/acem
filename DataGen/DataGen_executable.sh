@@ -1,9 +1,5 @@
 #!/usr/bin/bash
 
-source /home/tyuan/.virtualenvs/v/bin/activate
-export FLUPRO=/data/user/tyuan/sim/fluka
-export FLUFOR=gfortran
-
 cd $(dirname $0)
 echo $PWD
 

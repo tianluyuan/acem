@@ -2,7 +2,7 @@
 
 # $N=number of runs
 # $F=file name without ".inp"
-export FLUPRO=/data/user/tyuan/sim/fluka
+export FLUPRO=/cvmfs/icecube.opensciencegrid.org/users/tyuan/fluka
 export FLUFOR=gfortran
 # Check if both parameters are provided
 if [ $# -ne 3 ]; then
