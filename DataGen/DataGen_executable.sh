@@ -5,8 +5,8 @@ echo $PWD
 hostname
 printenv
 
-python3 -m venv v
-source v/bin/activate
+python3 -m venv $PWD/v
+source $PWD/v/bin/activate
 pip3 install -U numpy scipy pandas
 
 num_runs=1
