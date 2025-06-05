@@ -2,10 +2,12 @@
 
 cd $(dirname $0)
 echo $PWD
+hostname
+printenv
 
 python3 -m venv v
 source v/bin/activate
-pip3 install numpy scipy pandas
+pip3 install -U numpy scipy pandas
 
 num_runs=1
 seed_num=$(($1 * $num_runs))
