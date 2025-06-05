@@ -26,3 +26,4 @@ for file in ${dataoutputdir}/job$1txts/*.txt; do
 	rm $file
 done
 tar -cvzf job$1_`basename ${dataoutputdir}`.tar.gz `basename ${dataoutputdir}` # easy way to transfer output back with htcondor
+rm -r v
