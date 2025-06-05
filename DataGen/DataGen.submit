@@ -6,9 +6,9 @@ request_cpus = 1
 request_memory = 5GB
 request_disk = 30MB
 
-output = out.$(Cluster).$(Item)
-error = err.$(Cluster).$(Item)
-log = log.$(Cluster).$(Item)
+output = htc/out.$(Cluster).$(Item)
+error = htc/err.$(Cluster).$(Item)
+log = htc/log.$(Cluster).$(Item)
 
 transfer_input_files = inp_gen.csv,gen_inp.py,add_to_csv.py,inp2txt.sh,inpBase.txt
 transfer_output_files = 
