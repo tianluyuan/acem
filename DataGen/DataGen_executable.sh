@@ -21,4 +21,4 @@ for file in ${dataoutputdir}/job$1txts/*.txt; do
     python add_to_csv.py -txt $file -csv ${dataoutputdir}/job$1_`basename ${file%_[0-9]*_[0-9]*\.txt}`.csv
 	rm $file
 done
-
+tar -cvzf job$1.${dataoutputdir}.tar.gz ${dataoutputdir} # easy way to transfer output back with htcondor

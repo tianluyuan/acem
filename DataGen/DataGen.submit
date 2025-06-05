@@ -1,17 +1,21 @@
 universe = vanilla
-executable = /data/user/tyuan/projects/Shower-Simulations/DataGen_executable.sh
+executable = DataGen_executable.sh
 arguments = $(Item)
 
 request_cpus = 1
 request_memory = 5GB
 request_disk = 30MB
 
-output = out.$(Item)
-error = err.$(Item)
-log = log.$(Item)
+output = out.$(Cluster).$(Item)
+error = err.$(Cluster).$(Item)
+log = log.$(Cluster).$(Item)
+
+Requirements = HAS_CVMFS_icecube_opensciencegrid_org && has_avx2 && (KFLOPS > 2000000)
+# +SingularityImage="/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7:latest"
 
 
 should_transfer_files = YES
+when_to_transfer_output = ON_SUCCESS
 
 queue from seq 1 500 |
 
