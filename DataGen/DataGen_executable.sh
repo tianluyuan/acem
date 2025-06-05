@@ -5,8 +5,9 @@ echo $PWD
 hostname
 printenv
 
-python3 -m venv $PWD/v
-source $PWD/v/bin/activate
+tmp=`mktemp -d`
+python3 -m venv --copies $tmp
+source $tmp/bin/activate
 pip3 install -U numpy scipy pandas
 
 num_runs=1
@@ -30,4 +31,3 @@ done
 rm -r ${dataoutputdir}/job$1txts
 
 tar -cvzf job$1_`basename ${dataoutputdir}`.tar.gz `basename ${dataoutputdir}` # easy way to transfer output back with htcondor
-rm -r v
