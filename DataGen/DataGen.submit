@@ -10,15 +10,15 @@ output = out.$(Cluster).$(Item)
 error = err.$(Cluster).$(Item)
 log = log.$(Cluster).$(Item)
 
-transfer_input_files = inp_gen.csv,gen_inp.py,add_to_csv.py,inp2txt.sh
+transfer_input_files = inp_gen.csv,gen_inp.py,add_to_csv.py,inp2txt.sh,inpBase.txt
 transfer_output_files = 
 
 Requirements = HAS_CVMFS_icecube_opensciencegrid_org && has_avx2 && (KFLOPS > 2000000)
-container_image = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el9:latest"
+#+SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el9:latest"
 
 
 should_transfer_files = YES
 when_to_transfer_output = ON_SUCCESS
 
-queue from seq 1 500 |
+#queue from seq 1 500 |
 

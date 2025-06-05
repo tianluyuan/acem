@@ -3,6 +3,10 @@
 cd $(dirname $0)
 echo $PWD
 
+python3 -m venv v
+source v/bin/activate
+pip3 install numpy scipy pandas
+
 num_runs=1
 seed_num=$(($1 * $num_runs))
 dataoutputdir=DataOutputs_$(head -n1 inp_gen.csv)
@@ -21,4 +25,4 @@ for file in ${dataoutputdir}/job$1txts/*.txt; do
     python add_to_csv.py -txt $file -csv ${dataoutputdir}/job$1_`basename ${file%_[0-9]*_[0-9]*\.txt}`.csv
 	rm $file
 done
-tar -cvzf job$1.${dataoutputdir}.tar.gz ${dataoutputdir} # easy way to transfer output back with htcondor
+tar -cvzf job$1_`basename ${dataoutputdir}`.tar.gz `basename ${dataoutputdir}` # easy way to transfer output back with htcondor
