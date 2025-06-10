@@ -22,5 +22,5 @@ chtc_want_el9 = true
 should_transfer_files = YES
 when_to_transfer_output = ON_SUCCESS
 
-queue from seq 1000 1099 |
+queue from seq 0 9999 |
 
