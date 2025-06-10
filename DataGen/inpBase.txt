@@ -47,6 +47,10 @@ ASSIGNMAT   BLCKHOLE     regBH
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
 * e+e- and gamma production threshold set at 1 MeV
 EMFCUT     -0.000264  0.001286       1.0       ICE                    PROD-CUT
+* A threshold of 1 GeV (kinetic energy) is requested for muons which can be
+* treated separately
+*...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+...
+PART-THR        -1.0      10.0      11.0       0.0       0.0       1.0
 * Cartesian binning of the pion fluence inside and around the target 
 * >>>>> AF
 *  Charged particle tracklength weighted for Cerenkov:
