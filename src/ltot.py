@@ -1,12 +1,12 @@
 import numpy as np
 from scipy import stats, optimize
 from matplotlib import pyplot as plt
-from FitSpline import load_ian
 import argparse
 
 
 log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
 n_E = len(log_ens) # Number of energy levels used for fitting
+fluka_bin_volume = 1000 * 1000 * 10
 
 
 def lmu(x, t0, t1, t2, t3):
@@ -18,6 +18,7 @@ def lsg(x, alpha, beta):
 
 
 if __name__ == '__main__':
+    from FitSpline import load_ian
     parser = argparse.ArgumentParser('Fitting script')
     parser.add_argument('particles', nargs='+')
     parser.add_argument('--show', action='store_true', default=False,
@@ -34,7 +35,7 @@ if __name__ == '__main__':
         sgs = np.zeros(n_E)
         for i in range(n_E):
             df = Dat[energy_strs[i]]
-            _mu, _sig = stats.norm.fit(df['ltot'])
+            _mu, _sig = stats.norm.fit(df['ltot'] * fluka_bin_volume)
             mus[i] = _mu
             sgs[i] = _sig
         lmu_fit = optimize.curve_fit(lmu, log_ens, np.log(mus))
@@ -42,10 +43,11 @@ if __name__ == '__main__':
         mu_pars[particle] = lmu_fit[0]
         sg_pars[particle] = lsg_fit[0]
         if args.show:
-            plt.plot(log_ens, np.log(mus), 'bo', label='mu')
-            plt.plot(log_ens, lmu(log_ens, *lmu_fit[0]), 'b-')
-            plt.plot(log_ens, np.log(sgs), 'ro', label='sigma')
-            plt.plot(log_ens, lsg(log_ens, *lsg_fit[0]), 'r-')
+            plt.plot(log_ens, mus, 'bo', label='mu')
+            plt.plot(log_ens, np.exp(lmu(log_ens, *lmu_fit[0])), 'b-')
+            plt.plot(log_ens, sgs, 'ro', label='sigma')
+            plt.plot(log_ens, np.exp(lsg(log_ens, *lsg_fit[0])), 'r-')
+            plt.yscale('log')
             plt.show()
 
     np.savez('mu.npz', **mu_pars)
