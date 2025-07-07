@@ -347,6 +347,8 @@ if __name__ == '__main__':
             if args.show:
                 plt.hist2d(avals,bvals,bins=(bins_a,bins_b),#density=True,
                            norm=colors.LogNorm())
+                plt.xlabel(r"$a' = 1 / \sqrt{a}$")
+                plt.ylabel(r"$b' = 1/(1 + b^2)$")
                 plt.show()
                 plt.close('all')
 
