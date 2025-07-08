@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats, optimize
 from matplotlib import pyplot as plt
 import argparse
+plt.style.use('present')
 
 
 log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
@@ -9,11 +10,11 @@ n_E = len(log_ens) # Number of energy levels used for fitting
 fluka_bin_volume = 1000 * 1000 * 10
 
 
-def lmu(x, t0, t1, t2, t3):
+def ply(x, t0, t1, t2, t3):
     return t3*x**3 + t2*x**2 + t1*x + t0
 
 
-def lsg(x, alpha, beta):
+def pwl(x, alpha, beta):
     return np.log(alpha) + beta * x
 
 
@@ -23,32 +24,55 @@ if __name__ == '__main__':
     parser.add_argument('particles', nargs='+')
     parser.add_argument('--show', action='store_true', default=False,
                         help='Show fitted mu and sigmas')
+    parser.add_argument('--sshow', action='store_true', default=False,
+                        help='Show distributions')
 
     args = parser.parse_args()
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
 
-    mu_pars = {}
-    sg_pars = {}
+    def custom_optimizer(func, x0, args=(), disp=0):
+        res = optimize.minimize(func, x0, args, method="Powell",
+                                options={"disp": disp})
+        if res.success:
+            return res.x
+        raise RuntimeError('optimization routine failed')
+
     for particle in args.particles:
         Dat = load_ian(particle, f'DataOutputs_{particle}')
         energy_strs = list(Dat.keys())
-        mus = np.zeros(n_E)
-        sgs = np.zeros(n_E)
+        results = []
+        if particle in ['ELECTRON', 'PHOTON']:
+            form = stats.loggamma
+            p_fn = [ply, pwl, ply]
+        else:
+            form = stats.norm
+            p_fn = [pwl, ply]
+
         for i in range(n_E):
             df = Dat[energy_strs[i]]
-            _mu, _sig = stats.norm.fit(df['ltot'] * fluka_bin_volume)
-            mus[i] = _mu
-            sgs[i] = _sig
-        lmu_fit = optimize.curve_fit(lmu, log_ens, np.log(mus))
-        lsg_fit = optimize.curve_fit(lsg, log_ens, np.log(sgs))
-        mu_pars[particle] = lmu_fit[0]
-        sg_pars[particle] = lsg_fit[0]
+            ltots = df['ltot'] * fluka_bin_volume
+            if particle in ['ELECTRON', 'PHOTON']:
+                _res = form.fit(ltots)
+            else:
+                _res = form.fit(ltots)
+            results.append(_res)
+            if args.sshow:
+                bins = np.linspace(ltots.min() * 0.9, ltots.max() * 1.1, 50)
+                plt.hist(ltots, bins=bins, histtype='step', density=True)
+                plt.hist(
+                    form.rvs(*_res, size=10000),
+                    bins=bins, histtype='step', density=True)
+                plt.show()
+        results = np.asarray(results)
+        par_fits = [optimize.curve_fit(_f, log_ens, np.log(_y))[0] for _f, _y in zip(p_fn, results.T)]
+
         if args.show:
-            plt.plot(log_ens, mus, 'bo', label='mu')
-            plt.plot(log_ens, np.exp(lmu(log_ens, *lmu_fit[0])), 'b-')
-            plt.plot(log_ens, sgs, 'ro', label='sigma')
-            plt.plot(log_ens, np.exp(lsg(log_ens, *lsg_fit[0])), 'r-')
+            for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
+                plt.plot(log_ens, _y, 'o', color=colors[i], label=f'p{i}')
+                plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
+            plt.legend()
             plt.show()
 
-    np.savez('mu.npz', **mu_pars)
-    np.savez('sg.npz', **sg_pars)
+        np.savez(f'ltot_{particle}.npz', **{f'p{_i}': _par for _i, _par in enumerate(par_fits)})
