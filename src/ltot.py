@@ -61,10 +61,11 @@ if __name__ == '__main__':
             if args.sshow or args.ssavefig:
                 plt.clf()
                 bins = np.linspace(ltots.min() * 0.9, ltots.max() * 1.1, 50)
-                plt.hist(ltots, bins=bins, histtype='step', density=True)
+                plt.hist(ltots, bins=bins, histtype='step')
                 plt.hist(
-                    form.rvs(*_res, size=10000),
-                    bins=bins, histtype='step', density=True)
+                    form.rvs(*_res, size=len(ltots)),
+                    bins=bins, histtype='step')
+                plt.yscale('log')
                 if args.sshow:
                     plt.show()
                 if args.ssavefig:
