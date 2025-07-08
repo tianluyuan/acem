@@ -75,9 +75,9 @@ if __name__ == '__main__':
                 plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()
-            if args.show():
+            if args.show:
                 plt.show()
-            if args.savefig():
+            if args.savefig:
                 plt.savefig(f'{args.savefig}/ltot_{particle}.pdf')
                 plt.savefig(f'{args.savefig}/ltot_{particle}.png')
 
