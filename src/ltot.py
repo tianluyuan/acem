@@ -56,10 +56,7 @@ if __name__ == '__main__':
         for i in range(n_E):
             df = Dat[energy_strs[i]]
             ltots = df['ltot'] * fluka_bin_volume
-            if particle in ['ELECTRON', 'PHOTON']:
-                _res = form.fit(ltots)
-            else:
-                _res = form.fit(ltots)
+            _res = form.fit(ltots)
             results.append(_res)
             if args.sshow or args.ssavefig:
                 plt.clf()
