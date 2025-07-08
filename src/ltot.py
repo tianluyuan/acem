@@ -23,7 +23,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('Fitting script')
     parser.add_argument('particles', nargs='+')
     parser.add_argument('--show', action='store_true', default=False,
-                        help='Show fitted mu and sigmas')
+                        help='Show fitted pars')
+    parser.add_argument('--savefig', default=None, type=str,
+                        help='Save fitted plots to specified directory')
     parser.add_argument('--sshow', action='store_true', default=False,
                         help='Show distributions')
 
@@ -67,12 +69,16 @@ if __name__ == '__main__':
         results = np.asarray(results)
         par_fits = [optimize.curve_fit(_f, log_ens, np.log(_y))[0] for _f, _y in zip(p_fn, results.T)]
 
-        if args.show:
+        if args.show or args.savefig:
             for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
                 plt.plot(log_ens, _y, 'o', color=colors[i], label=f'p{i}')
                 plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()
-            plt.show()
+            if args.show():
+                plt.show()
+            if args.savefig():
+                plt.savefig(f'{args.savefig}/ltot_{particle}.pdf')
+                plt.savefig(f'{args.savefig}/ltot_{particle}.png')
 
         np.savez(f'ltot_{particle}.npz', **{f'p{_i}': _par for _i, _par in enumerate(par_fits)})
