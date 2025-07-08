@@ -28,6 +28,8 @@ if __name__ == '__main__':
                         help='Save fitted plots to specified directory')
     parser.add_argument('--sshow', action='store_true', default=False,
                         help='Show distributions')
+    parser.add_argument('--ssavefig', default=None, type=str,
+                        help='Save distributions to specified directory')
 
     args = parser.parse_args()
     prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -59,17 +61,23 @@ if __name__ == '__main__':
             else:
                 _res = form.fit(ltots)
             results.append(_res)
-            if args.sshow:
+            if args.sshow or args.ssavefig:
+                plt.clf()
                 bins = np.linspace(ltots.min() * 0.9, ltots.max() * 1.1, 50)
                 plt.hist(ltots, bins=bins, histtype='step', density=True)
                 plt.hist(
                     form.rvs(*_res, size=10000),
                     bins=bins, histtype='step', density=True)
-                plt.show()
+                if args.sshow:
+                    plt.show()
+                if args.ssavefig:
+                    plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{energy_strs[i]}.pdf')
+
         results = np.asarray(results)
         par_fits = [optimize.curve_fit(_f, log_ens, np.log(_y))[0] for _f, _y in zip(p_fn, results.T)]
 
         if args.show or args.savefig:
+            plt.clf()
             for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
                 plt.plot(log_ens, _y, 'o', color=colors[i], label=f'p{i}')
                 plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
