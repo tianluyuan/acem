@@ -48,9 +48,11 @@ if __name__ == '__main__':
         results = []
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.loggamma
+            # c (shape), loc, scale
             p_fn = [ply, pwl, ply]
         else:
             form = stats.norm
+            # pwl for loc (mean), ply for scale (sigma)
             p_fn = [pwl, ply]
 
         for i in range(n_E):
