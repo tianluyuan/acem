@@ -37,7 +37,7 @@ GEOEND
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
 MATERIAL         1.0       0.0 0.0000899       0.0       0.0       0.0  HYDROGEN
 MATERIAL         8.0       0.0   0.00143       0.0       0.0       0.0  OXYGEN
-MATERIAL         0.0       0.0     0.917       0.0       0.0       0.0  ICE
+MATERIAL         0.0       0.0    0.9216       0.0       0.0       0.0  ICE
 COMPOUND         2.0  HYDROGEN       1.0    OXYGEN       0.0       0.0  ICE
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
 *  ICE
@@ -53,8 +53,8 @@ PART-THR -1.000000E7      10.0      11.0       0.0       0.0       1.0
 * Cartesian binning of the pion fluence inside and around the target 
 * >>>>> AF
 *  Charged particle tracklength weighted for Cerenkov:
-USRBIN          10.0  ALL-CHAR     -26.0     500.0     500.0    5000.0  Cerfluence
-USRBIN        -500.0    -500.0       0.0       1.0       1.0     500.0   &
+USRBIN          10.0  ALL-CHAR     -26.0    1500.0    1500.0    5000.0  Cerfluence
+USRBIN       -1500.0   -1500.0       0.0       1.0       1.0     500.0   &
 *  This card activates the fluscw user routine (which must be linked of course)
 USERWEIG                             1.0
 * <<<<< AF
