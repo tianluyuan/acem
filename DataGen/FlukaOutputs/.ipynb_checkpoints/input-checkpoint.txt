@@ -1,3 +1,0 @@
-NEUTRON_27_5_003.bnn
-NEUTRON_27_5_003.txt
-
