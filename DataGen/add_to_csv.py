@@ -8,6 +8,7 @@ import csv
 #Some normalization parameters to match Lief's work
 L_rad = 39.7
 simulation_bin_thickness = 10
+simulation_xy_area = 3000 * 3000 # cm^2
 # constant for smoothing in peak selection
 sn_window = 8
 
@@ -37,7 +38,7 @@ energy = words[1] if args.energy == None else args.energy
 # gather bin data from the txt
 with open(args.txt,'r') as in_txt:
     bin_data = np.loadtxt(in_txt, dtype=float, skiprows=9, max_rows=50)
-bin_data = bin_data.reshape(bin_data.size)
+bin_data = bin_data.reshape(bin_data.size) * simulation_xy_area
 ltot = np.sum(bin_data)
 
 # calculate the number of peaks and their locations
