@@ -14,9 +14,6 @@ import argparse
 from collections import OrderedDict
 
 
-# In[62]:
-
-
 ### Data params
 log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
 # log_ens = np.asarray([3, 4, 5]) # log (base 10) of the energy values used for fitting Emre's data
@@ -50,11 +47,6 @@ num_iters = 1000 # Number of iterations of least square regression for fitting, 
 perform_likelihood_test = True # Perform likelihood test on test sample for monitoring progress
 test_sample_size = 4301 # Number of elements in the testing data set
 theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
-# theta_0 = -np.ones(c_a*c_b*c_E)
-
-
-
-# In[63]:
 
 
 def format_energy(num):
@@ -96,8 +88,6 @@ def load_emre(particle, directory='gamma_fits'):
 
         Dat[estr] = df
     return Dat
-# In[64]:
-
 
 ## add knot values on above and below the range of interest
 a_k = sc.interpolate.interp1d(np.arange(c_a - 3 + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_a + 1))
