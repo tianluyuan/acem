@@ -58,6 +58,9 @@ USRBIN       -1500.0   -1500.0       0.0       1.0       1.0     500.0   &
 *  This card activates the fluscw user routine (which must be linked of course)
 USERWEIG                             1.0
 * <<<<< AF
+* Comment the above and uncomment the line below to track p+n (e.g. from e- beam)
+* USRBIN          10.0  NUCLEONS     -26.0    1500.0    1500.0    5000.0  Cerfluence
+* USRBIN       -1500.0   -1500.0       0.0       1.0       1.0     500.0   &
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
 PHYSICS          1.0       0.0       0.0       0.0       0.0       0.0CHARMDECay
 RANDOMIZE        1.0*        *
