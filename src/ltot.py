@@ -7,7 +7,6 @@ plt.style.use('present')
 
 log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
 n_E = len(log_ens) # Number of energy levels used for fitting
-fluka_bin_width = 1000 * 1000 * 10
 
 
 def ply(x, t0, t1, t2, t3):
@@ -57,7 +56,7 @@ if __name__ == '__main__':
 
         for i in range(n_E):
             df = Dat[energy_strs[i]]
-            ltots = df['ltot'] * fluka_bin_width
+            ltots = df['ltot']
             _res = form.fit(ltots)
             results.append(_res)
             if args.sshow or args.ssavefig:

@@ -70,7 +70,7 @@ def format_energy(num):
 ### Reading into Dictionary of pandas dataframes --> we can change the reading format
 def load_csv(fpath):
     header = [str(i) for i in np.linspace(0,4990,500)] + \
-        ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Peak1','Peak2','Peak3','Peak4','Peak5']
+        ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
     return pd.read_csv(fpath, names=header).dropna(subset='gammaA')
 
 
