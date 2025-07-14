@@ -1,6 +1,6 @@
 universe = vanilla
 executable = DataGen_executable.sh
-arguments = $(Item)
+arguments = $(Item) inp_gen.csv
 
 request_cpus = 1
 request_memory = 5GB
