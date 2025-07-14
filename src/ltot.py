@@ -35,7 +35,8 @@ if __name__ == '__main__':
     colors = prop_cycle.by_key()['color']
 
     def custom_optimizer(func, x0, args=(), disp=0):
-        res = optimize.minimize(func, x0, args, method="Powell",
+        res = optimize.minimize(func, x0, args, method="slsqp",
+                                bounds=[(0, np.inf)] * len(x0),
                                 options={"disp": disp})
         if res.success:
             return res.x
@@ -51,22 +52,24 @@ if __name__ == '__main__':
             p_fn = [ply, pwl, ply]
         else:
             form = stats.norm
-            # pwl for loc (mean), ply for scale (sigma)
-            p_fn = [pwl, ply]
+            # ply for loc (mean), pwl for scale (sigma)
+            p_fn = [ply, pwl]
 
         for i in range(n_E):
             df = Dat[energy_strs[i]]
             ltots = df['ltot']
-            _res = form.fit(ltots)
+            # ltots = ltots[ltots>np.quantile(ltots, 0.001)]
+            _res = form.fit(ltots, method='MLE')
             results.append(_res)
             if args.sshow or args.ssavefig:
                 plt.clf()
                 bins = np.linspace(ltots.min() * 0.9, ltots.max() * 1.1, 50)
-                plt.hist(ltots, bins=bins, histtype='step')
+                plt.hist(ltots, bins=bins, histtype='step', label='FLUKA')
                 plt.hist(
                     form.rvs(*_res, size=len(ltots)),
-                    bins=bins, histtype='step')
-                plt.yscale('log')
+                    bins=bins, histtype='step', label='Fit')
+                # plt.yscale('log')
+                plt.legend()
                 if args.sshow:
                     plt.show()
                 if args.ssavefig:
