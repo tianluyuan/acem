@@ -51,9 +51,9 @@ if __name__ == '__main__':
             # c (shape), loc, scale
             p_fn = [ply, pwl, ply]
         else:
-            form = stats.norm
+            form = stats.skewnorm
             # pwl for loc (mean), ply for scale (sigma)
-            p_fn = [pwl, ply]
+            p_fn = [ply, pwl, ply]
 
         for i in range(n_E):
             df = Dat[energy_strs[i]]
@@ -76,12 +76,15 @@ if __name__ == '__main__':
                     plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{energy_strs[i]}.pdf')
 
         results = np.asarray(results)
-        par_fits = [optimize.curve_fit(_f, log_ens, np.log(_y))[0] for _f, _y in zip(p_fn, results.T)]
+        _sel = results[:, 0] > 0
+        par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log(_y[_sel]))[0]
+                    for _f, _y in zip(p_fn, results.T)]
 
         if args.show or args.savefig:
             plt.clf()
             for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
-                plt.plot(log_ens, _y, 'o', color=colors[i], label=f'p{i}')
+                plt.plot(log_ens[_sel], _y[_sel], 'o', color=colors[i], label=f'p{i}')
+                plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=colors[i])
                 plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()

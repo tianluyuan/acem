@@ -8,7 +8,7 @@ colors = prop_cycle.by_key()['color']
 
 lrad = 0.358/0.9216 * 100 # cm
 estr = '1.00000E3'
-ppart = 'PHOTON'
+ppart = 'PROTON'
 npart = 3
 
 slt = np.s_[:, 501]
@@ -59,9 +59,9 @@ plt.legend(['xy +/- 15m, density=0.9216', 'raw, xy +/- 5m, density=0.917'])
 plt.yscale('log')
 plt.show()
 
-# check saved dl/dx for random 3 vs bottom-5%-ltot 3 events
+# check saved dl/dx for random 3 vs bottom-n%-ltot 3 events
 plt.clf()
-al = a[a[slt] < np.quantile(a[slt], 0.05)]
+al = a[a[slt] < np.quantile(a[slt], 0.01)]
 [plt.plot(range(500), a[_,:500], label=f'{a[_, 501]}', c=colors[_]) for _ in range(3)];
 [plt.plot(range(500), al[_,:500], linestyle='--', label=f'{al[_, 501]}', c=colors[_]) for _ in range(3)]
 plt.legend()
