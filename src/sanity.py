@@ -8,7 +8,7 @@ colors = prop_cycle.by_key()['color']
 
 lrad = 0.358/0.9216 * 100 # cm
 estr = '1.00000E3'
-ppart = 'PROTON'
+ppart = 'PHOTON'
 npart = 3
 
 slt = np.s_[:, 501]
