@@ -52,8 +52,8 @@ if __name__ == '__main__':
             p_fn = [ply, pwl, ply]
         else:
             form = stats.norm
-            # ply for loc (mean), pwl for scale (sigma)
-            p_fn = [ply, pwl]
+            # pwl for loc (mean), ply for scale (sigma)
+            p_fn = [pwl, ply]
 
         for i in range(n_E):
             df = Dat[energy_strs[i]]
