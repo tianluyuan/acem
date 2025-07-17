@@ -23,7 +23,7 @@ mkdir -p ${dataoutputdir}/job$1txts
 
 python3 gen_inp.py -s $num_runs -ss $seed_num -i ${2:-inp_gen.csv} -o ${dataoutputdir}/job$1inps -l True
 for file in ${dataoutputdir}/job$1inps/*.inp; do
-    ./inp2txt.sh $file ${dataoutputdir}/job$1txts 100
+    ./inp2txt.sh $file ${dataoutputdir}/job$1txts 1
 done
 rm ${dataoutputdir}/job$1txts/input.txt
 rm -r ${dataoutputdir}/job$1inps
