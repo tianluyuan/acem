@@ -60,10 +60,25 @@ def format_energy(num):
 
 
 ### Reading into Dictionary of pandas dataframes --> we can change the reading format
-def load_csv(fpath):
+def load_csv(fpath, clean=True):
     header = [str(i) for i in np.linspace(0,4990,500)] + \
         ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
-    return pd.read_csv(fpath, names=header).dropna(subset='gammaA')
+    df = pd.read_csv(fpath, names=header)
+    if not clean:
+        return df
+    
+    df.dropna(subset='gammaA', inplace=True)
+    lo, hi = np.quantile(df['ltot'], [0.005, 1.0])
+    return df[(df['ltot'] >= lo) & (df['ltot'] <= hi)]
+
+
+def load_npy(fpath, clean=True):
+    a = np.loadtxt(fpath, delimiter=',')
+    if not clean:
+        return a
+
+    lo, hi = np.quantile(a[:, 501], [0.005, 1.0])
+    return a[~np.isnan(a[:, 502]) & (a[:, 501] >= lo) & (a[:, 501] <= hi)]
 
 
 def load_ian(particle, directory='../EnSplit'):

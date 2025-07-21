@@ -16,12 +16,14 @@ npart = 3
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Fitting script')
     parser.add_argument('fpath', type=Path)
-    parser.add_argument('--reference', type=Path, default=None)
+    parser.add_argument('--reference', type=Path, default=None,
+                        help='path to reference for ltot comp')
+    parser.add_argument('--clean', type=bool, default=False,
+                        help='remove outliers in data')
     args = parser.parse_args()
 
-    slt = np.s_[:, 501]
-    a = np.loadtxt(args.fpath, delimiter=',')
-    df = FitSpline.load_csv(args.fpath)
+    a = FitSpline.load_npy(args.fpath, args.clean)
+    df = FitSpline.load_csv(args.fpath, args.clean)
 
     for _ in range(npart):
         _row = df.iloc[_]
@@ -51,14 +53,15 @@ if __name__ == '__main__':
     plt.show()
 
     # check ltot vs out.v1 (unweighted track length)
+    _s = np.s_[:, 501]
     if args.reference.is_file():
-        b = np.loadtxt(args.reference, delimiter=',')
-        bins = np.linspace(min(a[slt].min(), b[slt].min() * 1e7),
-                           max(a[slt].max(), b[slt].max() * 1e7),
+        b = FitSpline.load_npy(args.reference, args.clean)
+        bins = np.linspace(min(a[_s].min(), b[_s].min() * 1e7),
+                           max(a[_s].max(), b[_s].max() * 1e7),
                            100)
         plt.clf()
-        plt.hist(a[slt], bins=bins, density=True, histtype='step')
-        plt.hist(b[slt] * 1e7, bins=bins, density=True, histtype='step')
+        plt.hist(a[_s], bins=bins, density=True, histtype='step')
+        plt.hist(b[_s] * 1e7, bins=bins, density=True, histtype='step')
         plt.xlabel('Total track length [cm]')
         plt.ylabel('density')
         plt.legend(['xy +/- 15m, density=0.9216', 'raw, xy +/- 5m, density=0.917'])
@@ -67,7 +70,7 @@ if __name__ == '__main__':
 
     # check saved dl/dx for random 3 vs bottom-n%-ltot 3 events
     plt.clf()
-    al = a[a[slt] < np.quantile(a[slt], 0.01)]
+    al = a[a[_s] < np.quantile(a[_s], 0.01)]
     [plt.plot(range(500), a[_,:500], label=f'{a[_, 501]}', c=colors[_]) for _ in range(3)];
     [plt.plot(range(500), al[_,:500], linestyle='--', label=f'{al[_, 501]}', c=colors[_]) for _ in range(3)]
     plt.legend()
