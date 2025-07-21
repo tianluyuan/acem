@@ -58,7 +58,6 @@ if __name__ == '__main__':
         for i in range(n_E):
             df = Dat[energy_strs[i]]
             ltots = df['ltot']
-            # ltots = ltots[ltots>np.quantile(ltots, 0.001)]
             _res = form.fit(ltots, method='MLE')
             results.append(_res)
             if args.sshow or args.ssavefig:
