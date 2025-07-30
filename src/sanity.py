@@ -18,8 +18,14 @@ if __name__ == '__main__':
     parser.add_argument('fpath', type=Path)
     parser.add_argument('--reference', type=Path, default=None,
                         help='path to reference for ltot comp')
+    parser.add_argument('--label', type=Path, default='current',
+                        help='label for the file of interest')
+    parser.add_argument('--rlabel', type=Path, default='reference',
+                        help='label for the reference file')
     parser.add_argument('--clean', type=bool, default=False,
                         help='remove outliers in data')
+    parser.add_argument('--savefig', default=None, type=str,
+                        help='Save plots to specified directory')
     args = parser.parse_args()
 
     a = FitSpline.load_npy(args.fpath, args.clean)
@@ -36,6 +42,9 @@ if __name__ == '__main__':
     plt.xlabel('[cm]')
     plt.xlim(0, 2000)
     plt.legend()
+    if args.savefig:
+        plt.savefig(f'{args.savefig}/dldx.pdf', bbox_inches='tight')
+        plt.savefig(f'{args.savefig}/dldx.png', bbox_inches='tight')
     plt.show()
 
     xdf = df[df['gammaA'] < 1.5]
@@ -50,22 +59,28 @@ if __name__ == '__main__':
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
     plt.xlim(0, 2000)
+    if args.savefig:
+        plt.savefig(f'{args.savefig}/dldx_smallgA.pdf', bbox_inches='tight')
+        plt.savefig(f'{args.savefig}/dldx_smallgA.png', bbox_inches='tight')
     plt.show()
 
-    # check ltot vs out.v1 (unweighted track length)
+    # compare ltot vs a reference
     _s = np.s_[:, 501]
     if args.reference.is_file():
         b = FitSpline.load_npy(args.reference, args.clean)
-        bins = np.linspace(min(a[_s].min(), b[_s].min() * 1e7),
-                           max(a[_s].max(), b[_s].max() * 1e7),
+        bins = np.linspace(min(a[_s].min(), b[_s].min()),
+                           max(a[_s].max(), b[_s].max()),
                            100)
         plt.clf()
-        plt.hist(a[_s], bins=bins, density=True, histtype='step')
-        plt.hist(b[_s] * 1e7, bins=bins, density=True, histtype='step')
+        plt.hist(a[_s], bins=bins, density=True, histtype='step', label=args.label)
+        plt.hist(b[_s], bins=bins, density=True, histtype='step', label=args.rlabel)
         plt.xlabel('Total track length [cm]')
         plt.ylabel('density')
-        plt.legend(['xy +/- 15m, density=0.9216', 'raw, xy +/- 5m, density=0.917'])
+        plt.legend()
         plt.yscale('log')
+        if args.savefig:
+            plt.savefig(f'{args.savefig}/ltots.pdf', bbox_inches='tight')
+            plt.savefig(f'{args.savefig}/ltots.png', bbox_inches='tight')
         plt.show()
 
     # check saved dl/dx for random 3 vs bottom-n%-ltot 3 events
@@ -74,4 +89,7 @@ if __name__ == '__main__':
     [plt.plot(range(500), a[_,:500], label=f'{a[_, 501]}', c=colors[_]) for _ in range(3)];
     [plt.plot(range(500), al[_,:500], linestyle='--', label=f'{al[_, 501]}', c=colors[_]) for _ in range(3)]
     plt.legend()
+    if args.savefig:
+        plt.savefig(f'{args.savefig}/dldx_smallL.pdf', bbox_inches='tight')
+        plt.savefig(f'{args.savefig}/dldx_smallL.png', bbox_inches='tight')
     plt.show()

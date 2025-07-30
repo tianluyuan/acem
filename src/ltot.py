@@ -67,12 +67,15 @@ if __name__ == '__main__':
                 plt.hist(
                     form.rvs(*_res, size=len(ltots)),
                     bins=bins, histtype='step', label='Fit')
-                # plt.yscale('log')
+                plt.xlabel('Total Cerenkov weighted length')
+                plt.ylabel('N')
                 plt.legend()
+                if args.ssavefig:
+                    plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{energy_strs[i]}.pdf', bbox_inches='tight')
+                    plt.yscale('log')
+                    plt.savefig(f'{args.ssavefig}/ltot_logdist_{particle}_{energy_strs[i]}.pdf', bbox_inches='tight')
                 if args.sshow:
                     plt.show()
-                if args.ssavefig:
-                    plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{energy_strs[i]}.pdf')
 
         results = np.asarray(results)
         _sel = results[:, 0] > 0
@@ -87,10 +90,12 @@ if __name__ == '__main__':
                 plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()
+            plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
+            plt.ylabel('Parameter values')
+            if args.savefig:
+                plt.savefig(f'{args.savefig}/ltot_{particle}.pdf', bbox_inches='tight')
+                plt.savefig(f'{args.savefig}/ltot_{particle}.png', bbox_inches='tight')
             if args.show:
                 plt.show()
-            if args.savefig:
-                plt.savefig(f'{args.savefig}/ltot_{particle}.pdf')
-                plt.savefig(f'{args.savefig}/ltot_{particle}.png')
 
         np.savez(f'ltot_{particle}.npz', **{f'p{_i}': _par for _i, _par in enumerate(par_fits)})
