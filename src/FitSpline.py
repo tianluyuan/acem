@@ -81,11 +81,11 @@ def load_npy(fpath, clean=True):
     return a[~np.isnan(a[:, 502]) & (a[:, 501] >= lo) & (a[:, 501] <= hi)]
 
 
-def load_ian(particle, directory='../EnSplit'):
+def load_ian(particle, directory='../EnSplit', clean=True):
     energy_strs = [format_energy(num) for num in 10**log_ens]
     Dat = OrderedDict()
     for energy_str in energy_strs:
-        Dat[energy_str] = load_csv(f'{directory}/{particle}_' + energy_str + '.csv')
+        Dat[energy_str] = load_csv(f'{directory}/{particle}_' + energy_str + '.csv', clean)
     return Dat
 
 
@@ -337,7 +337,7 @@ if __name__ == '__main__':
                         help='Show fitted a\', b\' distributions for each E slice')
     args = parser.parse_args()
     for particle in args.particles:
-        Dat = load_ian(particle, f'DataOutputs_{particle}')
+        Dat = load_ian(particle, f'DataOutputs_{particle}', clean=particle not in ('ELECTRON', 'PHOTON'))
         energy_strs = list(Dat.keys())
 
         output_file = f"Coeffs_{particle}.npy"
