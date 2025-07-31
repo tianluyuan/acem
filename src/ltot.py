@@ -100,7 +100,7 @@ if __name__ == '__main__':
             for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
                 plt.plot(log_ens[_sel], _y[_sel], 'o', color=colors[i], label=f'p{i}')
                 plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=colors[i])
-                plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
+                plt.plot(log_ens, 10**(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()
             plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
