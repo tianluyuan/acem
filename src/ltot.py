@@ -9,8 +9,8 @@ log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitt
 n_E = len(log_ens) # Number of energy levels used for fitting
 
 
-def efn(x, fn, sgn, *args):
-    return sgn * np.exp(fn(x, *args))
+def efn(en, fn, sgn, *args):
+    return sgn * 10**(fn(np.log10(en), *args))
 
 
 def qrt(x, t0, t1, t2, t3, t4):
@@ -21,8 +21,8 @@ def cbc(x, t0, t1, t2, t3):
     return t3*x**3 + t2*x**2 + t1*x + t0
 
 
-def pwl(x, alpha, beta):
-    return np.log(alpha) + beta * x
+def lin(x, t0, t1):
+    return t1 * x + t0
 
 
 if __name__ == '__main__':
@@ -54,13 +54,13 @@ if __name__ == '__main__':
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.norminvgauss
             # 2x shape, loc, scale
-            p_fn = [qrt, qrt, pwl, cbc]
+            p_fn = [qrt, qrt, lin, cbc]
             sgns = [1, -1, 1, 1]
             clean = False
         else:
             form = stats.skewnorm
-            # pwl for loc (mean), cbc for scale (sigma)
-            p_fn = [cbc, pwl, cbc]
+            # lin for loc (mean), cbc for scale (sigma)
+            p_fn = [cbc, lin, cbc]
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
         results = np.asarray(results) * sgns
         _sel = results[:, 0] > 0
-        par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log(_y[_sel]))[0]
+        par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log10(_y[_sel]))[0]
                     for _f, _y in zip(p_fn, results.T)]
 
         if args.show or args.savefig:
