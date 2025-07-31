@@ -9,7 +9,15 @@ log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitt
 n_E = len(log_ens) # Number of energy levels used for fitting
 
 
-def ply(x, t0, t1, t2, t3):
+def efn(x, fn, sgn, *args):
+    return sgn * np.exp(fn(x, *args))
+
+
+def qrt(x, t0, t1, t2, t3, t4):
+    return t4*x**4 + t3*x**3 + t2*x**2 + t1*x + t0
+
+
+def cbc(x, t0, t1, t2, t3):
     return t3*x**3 + t2*x**2 + t1*x + t0
 
 
@@ -43,17 +51,22 @@ if __name__ == '__main__':
         raise RuntimeError('optimization routine failed')
 
     for particle in args.particles:
-        Dat = load_ian(particle, f'DataOutputs_{particle}')
-        energy_strs = list(Dat.keys())
-        results = []
         if particle in ['ELECTRON', 'PHOTON']:
-            form = stats.loggamma
-            # c (shape), loc, scale
-            p_fn = [ply, pwl, ply]
+            form = stats.norminvgauss
+            # 2x shape, loc, scale
+            p_fn = [qrt, qrt, pwl, cbc]
+            sgns = [1, -1, 1, 1]
+            clean = False
         else:
             form = stats.skewnorm
-            # pwl for loc (mean), ply for scale (sigma)
-            p_fn = [ply, pwl, ply]
+            # pwl for loc (mean), cbc for scale (sigma)
+            p_fn = [cbc, pwl, cbc]
+            sgns = [1, 1, 1]
+            clean = True  # mask tricky decays
+
+        Dat = load_ian(particle, f'DataOutputs_{particle}', clean=clean)
+        energy_strs = list(Dat.keys())
+        results = []
 
         for i in range(n_E):
             df = Dat[energy_strs[i]]
@@ -77,7 +90,7 @@ if __name__ == '__main__':
                 if args.sshow:
                     plt.show()
 
-        results = np.asarray(results)
+        results = np.asarray(results) * sgns
         _sel = results[:, 0] > 0
         par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log(_y[_sel]))[0]
                     for _f, _y in zip(p_fn, results.T)]
@@ -98,4 +111,6 @@ if __name__ == '__main__':
             if args.show:
                 plt.show()
 
-        np.savez(f'ltot_{particle}.npz', **{f'p{_i}': _par for _i, _par in enumerate(par_fits)})
+        pdict = {f'p{_i}': _par for _i, _par in enumerate(par_fits)}
+        pdict['s'] = sgns
+        np.savez(f'ltot_{particle}.npz', **pdict)
