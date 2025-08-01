@@ -76,10 +76,12 @@ if __name__ == '__main__':
             ltots = df['ltot']
             _res = form.fit(ltots, method='MLE')
             results.append(_res)
-            if args.sshow or args.ssavefig:
+            if args.sshow or args.sshowlogy or args.ssavefig:
                 _rvs = form.rvs(*_res, size=len(ltots))
                 bins = np.linspace(min(_rvs.min(), ltots.min()) * 0.9,
                                    max(_rvs.max(), ltots.max()) * 1.1, 50)
+                # bins = np.logspace(np.log10(min(_rvs.min(), ltots.min()) * 0.9),
+                #                    np.log10(max(_rvs.max(), ltots.max()) * 1.1), 50)
                 plt.clf()
                 plt.hist(ltots, bins=bins, histtype='step', label='FLUKA')
                 plt.hist(_rvs, bins=bins, histtype='step', label='Fit')
@@ -90,6 +92,7 @@ if __name__ == '__main__':
                     plt.show()
                 if args.sshowlogy:
                     plt.yscale('log')
+                    # plt.xscale('log')
                     plt.show()
                 if args.ssavefig:
                     plt.yscale('linear')
