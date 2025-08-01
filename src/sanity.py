@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     # compare ltot vs a reference
     _s = np.s_[:, 501]
-    if args.reference.is_file():
+    if args.reference is not None and args.reference.is_file():
         b = FitSpline.load_npy(args.reference, args.clean)
         bins = np.linspace(min(a[_s].min(), b[_s].min()),
                            max(a[_s].max(), b[_s].max()),

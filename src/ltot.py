@@ -33,8 +33,11 @@ if __name__ == '__main__':
                         help='Show fitted pars')
     parser.add_argument('--savefig', default=None, type=str,
                         help='Save fitted plots to specified directory')
-    parser.add_argument('--sshow', action='store_true', default=False,
-                        help='Show distributions')
+    mxg = parser.add_mutually_exclusive_group()
+    mxg.add_argument('--sshow', action='store_true', default=False,
+                     help='Show distributions')
+    mxg.add_argument('--sshowlogy', action='store_true', default=False,
+                     help='Show distributions with yscale log')
     parser.add_argument('--ssavefig', default=None, type=str,
                         help='Save distributions to specified directory')
 
@@ -74,21 +77,25 @@ if __name__ == '__main__':
             _res = form.fit(ltots, method='MLE')
             results.append(_res)
             if args.sshow or args.ssavefig:
+                _rvs = form.rvs(*_res, size=len(ltots))
+                bins = np.linspace(min(_rvs.min(), ltots.min()) * 0.9,
+                                   max(_rvs.max(), ltots.max()) * 1.1, 50)
                 plt.clf()
-                bins = np.linspace(ltots.min() * 0.9, ltots.max() * 1.1, 50)
                 plt.hist(ltots, bins=bins, histtype='step', label='FLUKA')
-                plt.hist(
-                    form.rvs(*_res, size=len(ltots)),
-                    bins=bins, histtype='step', label='Fit')
+                plt.hist(_rvs, bins=bins, histtype='step', label='Fit')
                 plt.xlabel('Total Cerenkov weighted length')
                 plt.ylabel('N')
                 plt.legend()
+                if args.sshow:
+                    plt.show()
+                if args.sshowlogy:
+                    plt.yscale('log')
+                    plt.show()
                 if args.ssavefig:
+                    plt.yscale('linear')
                     plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{energy_strs[i]}.pdf', bbox_inches='tight')
                     plt.yscale('log')
                     plt.savefig(f'{args.ssavefig}/ltot_logdist_{particle}_{energy_strs[i]}.pdf', bbox_inches='tight')
-                if args.sshow:
-                    plt.show()
 
         results = np.asarray(results) * sgns
         _sel = results[:, 0] > 0
