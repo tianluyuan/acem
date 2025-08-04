@@ -9,8 +9,8 @@ log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitt
 n_E = len(log_ens) # Number of energy levels used for fitting
 
 
-def efn(en, fn, sgn, *args):
-    return sgn * 10**(fn(np.log10(en), *args))
+def efn(en, fn, *args):
+    return np.exp(fn(np.log10(en), *args))
 
 
 def qrt(x, t0, t1, t2, t3, t4):
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
         results = np.asarray(results) * sgns
         _sel = results[:, 0] > 0
-        par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log10(_y[_sel]))[0]
+        par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log(_y[_sel]))[0]
                     for _f, _y in zip(p_fn, results.T)]
 
         if args.show or args.savefig:
@@ -110,7 +110,7 @@ if __name__ == '__main__':
             for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
                 plt.plot(log_ens[_sel], _y[_sel], 'o', color=colors[i], label=f'p{i}')
                 plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=colors[i])
-                plt.plot(log_ens, 10**(_f(log_ens, *_p)), color=colors[i])
+                plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()
             plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
