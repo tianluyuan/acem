@@ -64,6 +64,10 @@ def load_csv(fpath, clean=True):
     header = [str(i) for i in np.linspace(0,4990,500)] + \
         ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
     df = pd.read_csv(fpath, names=header)
+    # DEBUG
+    # df['Zbins'] = 500
+    # df['Zwidth'] = 10
+    # END
     if not clean:
         return df
     
