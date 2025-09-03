@@ -9,13 +9,14 @@ prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
 
 lrad = 0.358/0.9216 * 100 # cm
-estr = '1.00000E3'
-ppart = 'PROTON'
-npart = 3
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Fitting script')
     parser.add_argument('fpath', type=Path)
+    parser.add_argument('-N', '--npart', type=int, default=3,
+                        help='number of profiles to show')
+    parser.add_argument('-0', '--istart', type=int, default=0,
+                        help='index to start at')
     parser.add_argument('--reference', type=Path, default=None,
                         help='path to reference for ltot comp')
     parser.add_argument('--label', type=Path, default='current',
@@ -31,12 +32,12 @@ if __name__ == '__main__':
     a = FitSpline.load_npy(args.fpath, args.clean)
     df = FitSpline.load_csv(args.fpath, args.clean)
 
-    for _ in range(npart):
-        _row = df.iloc[_]
+    for _ in range(args.npart):
+        _row = df.iloc[args.istart+_]
         _nbins = int(_row['Zbins'])
         xs = np.arange(_nbins) * _row['Zwidth']
         ltot = _row['ltot']
-        plt.plot(xs, a[_, :_nbins], color=colors[_], label=f'{ltot}')
+        plt.plot(xs, a[args.istart+_, :_nbins], color=colors[_], label=f'{ltot}')
         plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_], linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
@@ -49,13 +50,13 @@ if __name__ == '__main__':
 
     xdf = df[df['gammaA'] < 1.5]
     x = a[df['gammaA'] < 1.5]
-    for _ in range(min(npart, len(x))):
+    for _ in range(args.istart, min(args.istart + args.npart, len(x))):
         _row = xdf.iloc[_]
         _nbins = int(_row['Zbins'])
         xs = np.arange(_nbins) * _row['Zwidth']
-        plt.plot(xs, x[_, :_nbins], color=colors[_])
+        plt.plot(xs, x[_, :_nbins], color=colors[_-args.istart])
         ltot = _row['ltot']
-        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_], linestyle='--')
+        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_-args.istart], linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
     plt.xlim(0, 2000)
@@ -86,8 +87,8 @@ if __name__ == '__main__':
     # check saved dl/dx for random 3 vs bottom-n%-ltot 3 events
     plt.clf()
     al = a[a[_s] < np.quantile(a[_s], 0.01)]
-    [plt.plot(range(500), a[_,:500], label=f'{a[_, 501]}', c=colors[_]) for _ in range(3)];
-    [plt.plot(range(500), al[_,:500], linestyle='--', label=f'{al[_, 501]}', c=colors[_]) for _ in range(3)]
+    [plt.plot(range(500), a[_,:500], label=f'{a[_, 501]}', c=colors[_-args.istart]) for _ in range(args.istart, args.istart+args.npart)]
+    [plt.plot(range(500), al[_,:500], linestyle='--', label=f'{al[_, 501]}', c=colors[_-args.istart]) for _ in range(args.istart, min(args.istart+args.npart, len(al)))]
     plt.legend()
     if args.savefig:
         plt.savefig(f'{args.savefig}/dldx_smallL.pdf', bbox_inches='tight')
