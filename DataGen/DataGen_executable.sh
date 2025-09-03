@@ -8,7 +8,7 @@ uname -a
 lscpu
 
 vtmp=${_CONDOR_SCRATCH_DIR:-`mktemp -d`}/v
-echo vtmp
+echo $vtmp
 python3 -m venv --copies $vtmp
 source $vtmp/bin/activate || export PYTHONUSERBASE=$vtmp
 pip3 install -U numpy scipy pandas -v
