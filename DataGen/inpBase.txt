@@ -45,8 +45,8 @@ ASSIGNMAT        ICE    regice
 *  External Black Hole
 ASSIGNMAT   BLCKHOLE     regBH
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
-* e+e- and gamma production threshold set at 1 MeV
-EMFCUT     -0.000264  0.001286       1.0       ICE                    PROD-CUT
+* e+e- and gamma Cherenkov threshold set at 264 keV
+EMFCUT     -0.000264  0.000264       1.0       ICE                    PROD-CUT
 * A threshold energy [GeV] can be requested (e.g. here for muons)
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+...
 PART-THR -1.000000E7      10.0      11.0       0.0       0.0       1.0
