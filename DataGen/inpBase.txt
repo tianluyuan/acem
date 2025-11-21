@@ -3,7 +3,7 @@ TITLE
 Charged particle fluence inside ice
 *...+....1....+....2....+....3....+....4....+....5....+....6....+....7....+....8
 DEFAULTS                                                              PRECISION
-BEAM      *        *                                                  *        *
+BEAM     -*        *                                                  *        *
 BEAMPOS          0.0       0.0       0.0
 DISCARD     -NEUTRIM -ANEUTRIM  -NEUTRIT -ANEUTRIT  -NEUTRIE -ANEUTRIE
 PHYSICS         -1.0      -1.0       2.0       2.0       0.0       1.0NEUTRINO
