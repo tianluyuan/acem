@@ -7,7 +7,7 @@ import scipy as sc
 import csv
 
 #Some normalization parameters to match Lief's work
-L_rad = 35.8 / 0.9216
+L_rad = 36.08 / 0.9216
 # constant for smoothing in peak selection
 sn_window = 8
 
