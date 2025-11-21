@@ -8,7 +8,7 @@ plt.style.use('present')
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
 
-lrad = 0.358/0.9216 * 100 # cm
+lrad = 0.3608/0.9216 * 100 # cm
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Fitting script')
