@@ -1,9 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import FitSpline
 
 from shosim.media import IC3
 from shosim import model
+from shosim import util
 
 plt.style.use("paper-sans")
 prop_cycle = plt.rcParams["axes.prop_cycle"]
@@ -15,11 +15,11 @@ LTOT_LABEL = r"$\hat{\ell}_\text{tot}$"
 
 def fig2():
     ene = 1.0e3
-    npem = FitSpline.load_npy("DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
-    dfem = FitSpline.load_csv("DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
+    npem = util.load_npy("DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
+    dfem = util.load_csv("DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
 
-    nppi = FitSpline.load_npy("DataOutputs_PION+/PION+_1.00000E3.csv", False)
-    dfpi = FitSpline.load_csv("DataOutputs_PION+/PION+_1.00000E3.csv", False)
+    nppi = util.load_npy("DataOutputs_PION+/PION+_1.00000E3.csv", False)
+    dfpi = util.load_csv("DataOutputs_PION+/PION+_1.00000E3.csv", False)
 
     rwth = model.RWShower(IC3)
     for _ in range(4):
@@ -35,8 +35,8 @@ def fig2():
     plt.xlim(0, 1500)
     plt.ylim(ymin=0)
     plt.legend()
-    plt.savefig("figs/paper/fig2a.pdf", bbox_inches="tight")
-    plt.savefig("figs/paper/fig2a.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2a.png", bbox_inches="tight")
 
     plt.clf()
     bins = np.linspace(3e5, dfem["ltot"].max(), 100)
@@ -63,8 +63,8 @@ def fig2():
     plt.yscale("log")
     plt.ylabel("PDF")
     plt.xlabel(f"{LTOT_LABEL} [cm]")
-    plt.savefig("figs/paper/fig2b.pdf", bbox_inches="tight")
-    plt.savefig("figs/paper/fig2b.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2b.png", bbox_inches="tight")
 
 
 if __name__ == "__main__":

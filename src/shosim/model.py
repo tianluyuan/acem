@@ -46,7 +46,7 @@ class RWShower:
     G4_DENSITY = 0.91
     G4_NPHASE = 1.33
 
-    def __init__(self, medium: Medium):
+    def __init__(self, medium: 'Medium'):
         self.density = medium.density
         self.lrad = medium.lrad
         self.nphase = medium.nphase
