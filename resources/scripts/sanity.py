@@ -41,11 +41,14 @@ if __name__ == '__main__':
         plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_], linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
-    plt.xlim(0, 2000)
+    plt.xlim(0, 3000)
     plt.legend()
     if args.savefig:
         plt.savefig(f'{args.savefig}/dldx.pdf', bbox_inches='tight')
         plt.savefig(f'{args.savefig}/dldx.png', bbox_inches='tight')
+        plt.yscale('log')
+        plt.savefig(f'{args.savefig}/dldx_logy.pdf', bbox_inches='tight')
+        plt.savefig(f'{args.savefig}/dldx_logy.png', bbox_inches='tight')
     plt.show()
 
     xdf = df[df['gammaA'] < 1.5]
@@ -59,22 +62,21 @@ if __name__ == '__main__':
         plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_-args.istart], linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
-    plt.xlim(0, 2000)
+    plt.xlim(0, 3000)
     if args.savefig:
         plt.savefig(f'{args.savefig}/dldx_smallgA.pdf', bbox_inches='tight')
         plt.savefig(f'{args.savefig}/dldx_smallgA.png', bbox_inches='tight')
     plt.show()
 
     # compare ltot vs a reference
-    _s = np.s_[:, 501]
     if args.reference is not None and args.reference.is_file():
-        b = FitSpline.load_npy(args.reference, args.clean)
-        bins = np.linspace(min(a[_s].min(), b[_s].min()),
-                           max(a[_s].max(), b[_s].max()),
+        df_b = FitSpline.load_csv(args.reference, args.clean)
+        bins = np.linspace(min(df['ltot'].min(), df_b['ltot'].min()),
+                           max(df['ltot'].max(), df_b['ltot'].max()),
                            100)
         plt.clf()
-        plt.hist(a[_s], bins=bins, density=True, histtype='step', label=args.label)
-        plt.hist(b[_s], bins=bins, density=True, histtype='step', label=args.rlabel)
+        plt.hist(df['ltot'], bins=bins, density=True, histtype='step', label=args.label)
+        plt.hist(df_b['ltot'], bins=bins, density=True, histtype='step', label=args.rlabel)
         plt.xlabel('Total track length [cm]')
         plt.ylabel('density')
         plt.legend()
@@ -86,10 +88,13 @@ if __name__ == '__main__':
 
     # check saved dl/dx for random 3 vs bottom-n%-ltot 3 events
     plt.clf()
-    al = a[a[_s] < np.quantile(a[_s], 0.01)]
-    [plt.plot(range(500), a[_,:500], label=f'{a[_, 501]}', c=colors[_-args.istart]) for _ in range(args.istart, args.istart+args.npart)]
-    [plt.plot(range(500), al[_,:500], linestyle='--', label=f'{al[_, 501]}', c=colors[_-args.istart]) for _ in range(args.istart, min(args.istart+args.npart, len(al)))]
+    al = df[df['ltot'] < np.quantile(df['ltot'], 0.01)].to_numpy()
+    [plt.plot(xs, a[_,:_nbins], label=f'{a[_, _nbins+1]:.2f}', c=colors[_-args.istart]) for _ in range(args.istart, args.istart+args.npart)]
+    [plt.plot(xs, al[_,:_nbins], linestyle='--', label=f'{al[_, _nbins+1]:.2f}', c=colors[_-args.istart]) for _ in range(args.istart, min(args.istart+args.npart, len(al)))]
     plt.legend()
+    plt.yscale('log')
+    plt.xlabel('[cm]')
+    plt.ylabel('dl/dx')
     if args.savefig:
         plt.savefig(f'{args.savefig}/dldx_smallL.pdf', bbox_inches='tight')
         plt.savefig(f'{args.savefig}/dldx_smallL.png', bbox_inches='tight')

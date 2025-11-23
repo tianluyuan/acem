@@ -49,50 +49,6 @@ test_sample_size = 4301 # Number of elements in the testing data set
 theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
 
 
-def format_energy(num):
-    num_str = "{:.5e}".format(num)
-    coefficient, exponent = num_str.split('e')
-    exponent2 = exponent.replace('+0', '')
-    if exponent2==exponent:
-        raise Exception("Invalid energy for this formating. Energy must be within the interval [1,1e10)")
-    coefficient = coefficient.ljust(7, '0')
-    return f"{coefficient}E{exponent2}"
-
-
-### Reading into Dictionary of pandas dataframes --> we can change the reading format
-def load_csv(fpath, clean=True):
-    header = [str(i) for i in np.linspace(0,4990,500)] + \
-        ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
-    df = pd.read_csv(fpath, names=header)
-    # DEBUG
-    # df['Zbins'] = 500
-    # df['Zwidth'] = 10
-    # END
-    if not clean:
-        return df
-    
-    df.dropna(subset='gammaA', inplace=True)
-    lo, hi = np.quantile(df['ltot'], [0.005, 1.0])
-    return df[(df['ltot'] >= lo) & (df['ltot'] <= hi)]
-
-
-def load_npy(fpath, clean=True):
-    a = np.loadtxt(fpath, delimiter=',')
-    if not clean:
-        return a
-
-    lo, hi = np.quantile(a[:, 501], [0.005, 1.0])
-    return a[~np.isnan(a[:, 502]) & (a[:, 501] >= lo) & (a[:, 501] <= hi)]
-
-
-def load_ian(particle, directory='../EnSplit', clean=True):
-    energy_strs = [format_energy(num) for num in 10**log_ens]
-    Dat = OrderedDict()
-    for energy_str in energy_strs:
-        Dat[energy_str] = load_csv(f'{directory}/{particle}_' + energy_str + '.csv', clean)
-    return Dat
-
-
 def load_emre(particle, directory='gamma_fits'):
     Dat = OrderedDict()
     energy_strs = [str(int(num/1e3)) for num in 10**log_ens]
