@@ -1,14 +1,10 @@
 import numpy as np
 from scipy import stats
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .media import Medium
+from .media import Medium
 
 
-def nphase_scale(n0: float, n1: float):
-    return (1. - 1./n1) * (1. + 1./n1) / ((1. - 1./n0) * (1. + 1./n0))
+def ltot_scale(m0: 'Medium', m1: 'Medium'):
+    return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
         
 
 class RWShower:
@@ -48,33 +44,29 @@ class RWShower:
                22: 0.64526,
                211: 0.33833116}
 
-    G4_DENSITY = 0.91
-    G4_NPHASE = 1.33
+    G4_MEDIUM = Medium(0.91, 1.33)
 
     def __init__(self, medium: 'Medium'):
-        self.density = medium.density
-        self.lrad = medium.lrad
-        self.nphase = medium.nphase
+        self.medium = medium
+        self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
 
     def ltot_mean(self, pdg: int, energy: float):
         alpha = self.MEAN_ALPHAS[pdg]
         beta = self.MEAN_BETAS[pdg]
-        return alpha * energy**beta * self.G4_DENSITY / self.density * nphase_scale(self.G4_NPHASE, self.nphase)
+        return alpha * energy**beta * self._scale
 
     def ltot_sigma(self, pdg: int, energy: float):
         alpha = self.SIGMA_ALPHAS[pdg]
         beta = self.SIGMA_BETAS[pdg]
-        return alpha * energy**beta * self.G4_DENSITY / self.density * nphase_scale(self.G4_NPHASE, self.nphase)
+        return alpha * energy**beta * self._scale
 
     def ltot(self, pdg: int, energy: float):
         return stats.norm(self.ltot_mean(pdg, energy), self.ltot_sigma(pdg, energy))
     
-
     def gamma(self, pdg: int, energy: float):
-        a_em = self.GAMMA_A[pdg](energy)
-        b_em = self.GAMMA_B[pdg]
-        return stats.gamma(a_em, scale=self.lrad / b_em)
+        _a = self.GAMMA_A[pdg](energy)
+        _b = self.GAMMA_B[pdg]
+        return stats.gamma(_a, scale=self.medium.lrad / _b)
 
-    
     def dldx(self, pdg: int, energy: float):
         return lambda x: self.ltot_mean(pdg, energy) * self.gamma(pdg, energy).pdf(x)

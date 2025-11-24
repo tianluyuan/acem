@@ -20,18 +20,18 @@ def fig2():
     npem = util.load_npy("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
     dfem = util.load_csv("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
 
-    nppi = util.load_npy("fluka/DataOutputs_PION+/PION+_1.00000E3.csv", False)
     dfpi = util.load_csv("fluka/DataOutputs_PION+/PION+_1.00000E3.csv", False)
 
     rwth = model.RWShower(MEDIUM_FLUKA)
+    assert(dfem["Zbins"].nunique()==1)
+    assert(dfem["Zwidth"].nunique()==1)
+    nbins = int(dfem.iloc[0]["Zbins"])
+    xs = np.arange(nbins) * dfem.iloc[0]["Zwidth"]
     for _ in range(4):
         _row = dfem.iloc[_]
-        _nbins = int(_row["Zbins"])
-        xs = np.arange(_nbins) * _row["Zwidth"]
-        plt.plot(xs, npem[_, :_nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
-    plt.plot(
-        rwth.dldx(11, ene)(xs), c="k", label=r"1 TeV $e^-$ (RW 2013)", linestyle="--"
-    )
+        plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
+    plt.plot(xs, rwth.dldx(11, ene)(xs), c="k",
+             label=r"1 TeV $e^-$ (RW 2013)", linestyle="--")
     plt.ylabel(DLDX_LABEL)
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
