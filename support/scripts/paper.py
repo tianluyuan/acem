@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from shosim.media import IC3
-from shosim import model
+from shosim import model, media
 from shosim import util
 
 plt.style.use("paper-sans")
@@ -12,16 +12,18 @@ colors = prop_cycle.by_key()["color"]
 DLDX_LABEL = r"$\text{d}\hat{\ell}/\text{d}x$"
 LTOT_LABEL = r"$\hat{\ell}_\text{tot}$"
 
+MEDIUM_FLUKA = media.Medium(0.9216, 1.33)
+
 
 def fig2():
     ene = 1.0e3
-    npem = util.load_npy("DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
-    dfem = util.load_csv("DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
+    npem = util.load_npy("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
+    dfem = util.load_csv("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
 
-    nppi = util.load_npy("DataOutputs_PION+/PION+_1.00000E3.csv", False)
-    dfpi = util.load_csv("DataOutputs_PION+/PION+_1.00000E3.csv", False)
+    nppi = util.load_npy("fluka/DataOutputs_PION+/PION+_1.00000E3.csv", False)
+    dfpi = util.load_csv("fluka/DataOutputs_PION+/PION+_1.00000E3.csv", False)
 
-    rwth = model.RWShower(IC3)
+    rwth = model.RWShower(MEDIUM_FLUKA)
     for _ in range(4):
         _row = dfem.iloc[_]
         _nbins = int(_row["Zbins"])

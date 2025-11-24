@@ -8,6 +8,6 @@ class Medium:
     def lrad(self):
         return self.x0 / self.density
 
-ICE = Medium(0.91, 1.33)
+ICE = Medium(0.917, 1.31)
 WATER = Medium(1., 1.33)
 IC3 = Medium(0.9216, 1.3195)

@@ -6,6 +6,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .media import Medium
 
+
+def nphase_scale(n0: float, n1: float):
+    return (1. - 1./n1) * (1. + 1./n1) / ((1. - 1./n0) * (1. + 1./n0))
+        
+
 class RWShower:
     """
     Calculates Cherenkov light yield and profile for EM and Hadronic showers,
@@ -54,12 +59,12 @@ class RWShower:
     def ltot_mean(self, pdg: int, energy: float):
         alpha = self.MEAN_ALPHAS[pdg]
         beta = self.MEAN_BETAS[pdg]
-        return alpha * energy**beta * self.G4_DENSITY / self.density
+        return alpha * energy**beta * self.G4_DENSITY / self.density * nphase_scale(self.G4_NPHASE, self.nphase)
 
     def ltot_sigma(self, pdg: int, energy: float):
         alpha = self.SIGMA_ALPHAS[pdg]
         beta = self.SIGMA_BETAS[pdg]
-        return alpha * energy**beta * self.G4_DENSITY / self.density
+        return alpha * energy**beta * self.G4_DENSITY / self.density * nphase_scale(self.G4_NPHASE, self.nphase)
 
     def ltot(self, pdg: int, energy: float):
         return stats.norm(self.ltot_mean(pdg, energy), self.ltot_sigma(pdg, energy))
