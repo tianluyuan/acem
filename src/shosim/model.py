@@ -51,22 +51,17 @@ class RWShower:
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
 
     def ltot_mean(self, pdg: int, energy: float):
-        alpha = self.MEAN_ALPHAS[pdg]
-        beta = self.MEAN_BETAS[pdg]
-        return alpha * energy**beta * self._scale
+        return self.MEAN_ALPHAS[pdg] * energy**self.MEAN_BETAS[pdg] * self._scale
 
     def ltot_sigma(self, pdg: int, energy: float):
-        alpha = self.SIGMA_ALPHAS[pdg]
-        beta = self.SIGMA_BETAS[pdg]
-        return alpha * energy**beta * self._scale
+        return self.SIGMA_ALPHAS[pdg] * energy**self.SIGMA_BETAS[pdg] * self._scale
 
     def ltot(self, pdg: int, energy: float):
         return stats.norm(self.ltot_mean(pdg, energy), self.ltot_sigma(pdg, energy))
     
     def gamma(self, pdg: int, energy: float):
-        _a = self.GAMMA_A[pdg](energy)
-        _b = self.GAMMA_B[pdg]
-        return stats.gamma(_a, scale=self.medium.lrad / _b)
+        return stats.gamma(self.GAMMA_A[pdg](energy),
+                           scale=self.medium.lrad / self.GAMMA_B[pdg])
 
     def dldx(self, pdg: int, energy: float):
         return lambda x: self.ltot_mean(pdg, energy) * self.gamma(pdg, energy).pdf(x)
