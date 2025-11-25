@@ -51,9 +51,9 @@ theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for 
 
 def load_emre(particle, directory='gamma_fits'):
     Dat = OrderedDict()
-    energy_strs = [str(int(num/1e3)) for num in 10**log_ens]
+    energies = [str(int(num/1e3)) for num in 10**log_ens]
     lrad = 0.358 / 0.9216
-    for eflt, estr in zip(10**log_ens, energy_strs):
+    for eflt, estr in zip(10**log_ens, energies):
         fpaths = glob.glob(f'{directory}/*{estr}TeV_{particle}_v2.csv')
         assert len(fpaths) == 1
         df = pd.read_csv(fpaths[0], index_col=0)
@@ -297,8 +297,9 @@ if __name__ == '__main__':
                         help='Show fitted a\', b\' distributions for each E slice')
     args = parser.parse_args()
     for particle in args.particles:
-        Dat = load_ian(particle, f'DataOutputs_{particle}', clean=particle not in ('ELECTRON', 'PHOTON'))
-        energy_strs = list(Dat.keys())
+        Dat = load_batch(f'fluka/DataOutputs_{particle}/*.csv',
+                         clean=particle not in ('ELECTRON', 'PHOTON'))
+        energies = list(Dat.keys())
 
         output_file = f"Coeffs_{particle}.npy"
 
@@ -308,7 +309,7 @@ if __name__ == '__main__':
         bins_a = np.linspace(ab_min,ab_max,n_a + 1)
         bins_b = np.linspace(ab_min,ab_max,n_b + 1)
         for i in range(n_E):
-            df = Dat[energy_strs[i]]
+            df = Dat[energies[i]]
             avals = ga(df.gammaA)
             bvals = gb(df.gammaB)
             Y[:,:,i],_,_ = np.histogram2d(avals,bvals,bins=(bins_a,bins_b))#,density=True)
@@ -370,8 +371,8 @@ if __name__ == '__main__':
         '''
         if perform_likelihood_test:
             test_sample = np.zeros([test_sample_size,2,51])
-            for index, energy_str in enumerate(energy_strs):
-                samp = Dat[energy_str].sample(n = test_sample_size)
+            for index, energy in enumerate(energies):
+                samp = Dat[energy].sample(n = test_sample_size)
                 test_sample[:,0,index] = ga(samp.gammaA)
                 test_sample[:,1,index] = gb(samp.gammaB)
         theta = theta_0
