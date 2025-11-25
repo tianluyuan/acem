@@ -1,3 +1,4 @@
+from pathlib import Path
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -47,9 +48,13 @@ def load_csv(fpath, clean=True):
     return df[(df['ltot'] >= lo) & (df['ltot'] <= hi)]
 
 
-def load_batch(log_ens, particle, directory, clean=True):
-    energy_strs = [format_energy(num) for num in 10**log_ens]
+def load_batch(pattern, clean=True, npy=False):
+    fglobs = Path('.').glob(pattern)
+    edict = {float(_.stem.split('_')[-1]):_  for _ in fglobs}
     Dat = OrderedDict()
-    for energy_str in energy_strs:
-        Dat[energy_str] = load_csv(f'{directory}/{particle}_' + energy_str + '.csv', clean)
+    loader = load_npy if npy else load_csv 
+    for ene in sorted(edict.keys()):
+        if ene in Dat:
+            raise RuntimeError('Multiple files with identical energies were found.')
+        Dat[ene] = loader(edict[ene], clean)
     return Dat
