@@ -27,7 +27,7 @@ class Shower:
         self.ltot = ltot
         self.shape = shape
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Provides a comprehensive string representation of the object.
         """
@@ -37,13 +37,13 @@ class Shower:
             f'shape={self.shape!r})'
         )
 
-    def dldx(self, x: 'npt.ArrayLike'):
+    def dldx(self, x: 'npt.ArrayLike') -> 'npt.ArrayLike':
         return self.ltot * self.shape.pdf(x)
         
 
 class ModelBase(ABC):
     @abstractmethod
-    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+    def ltot_dist(self, pdg: int, energy: float) -> 'rv_frozen':
         pass
 
     @abstractmethod
@@ -107,11 +107,11 @@ class RWShowerModel(ModelBase):
     def _ltot_sigma(self, pdg: int, energy: float) -> float:
         return self.SIGMA_ALPHAS[pdg] * energy**self.SIGMA_BETAS[pdg] * self._scale
 
-    def _shape(self, pdg: int, energy: float) -> rv_frozen:
+    def _shape(self, pdg: int, energy: float) -> 'rv_frozen':
         return stats.gamma(self.GAMMA_A[pdg](energy),
                            scale=self.medium.lrad / self.GAMMA_B[pdg])
 
-    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+    def ltot_dist(self, pdg: int, energy: float) -> 'rv_frozen':
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
     def avg(self, pdg: int, energy: float) -> Shower:
@@ -168,8 +168,6 @@ class ShowerModel(ModelBase):
         self.medium = medium
         self._scale = ltot_scale(self.FLUKA_MEDIUM, self.medium)
 
-    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
-        pass
     
     def avg(self, pdg: int, energy: float) -> Shower:
         pass
