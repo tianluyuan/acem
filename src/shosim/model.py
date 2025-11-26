@@ -6,6 +6,7 @@ from .media import Medium
 
 if TYPE_CHECKING:
     from scipy.stats._distn_infrastructure import rv_frozen
+    import numpy.typing as npt
 
 
 def ltot_scale(m0: 'Medium', m1: 'Medium'):
@@ -17,7 +18,7 @@ class Shower:
         self.ltot = ltot
         self.shape = shape
 
-    def dldx(self, x):
+    def dldx(self, x: 'npt.ArrayLike'):
         return self.ltot * self.shape.pdf(x)
         
 
