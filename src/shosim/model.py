@@ -54,7 +54,7 @@ class ModelBase(ABC):
     def sample(self,
                pdg: int,
                energy: float,
-               rng: Optional[Generator] = None) -> Shower:
+               rng: Optional[Generator]) -> Shower:
         pass
 
 
@@ -101,26 +101,26 @@ class RWShowerModel(ModelBase):
         self.medium = medium
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
 
-    def _ltot_mean(self, pdg: int, energy: float):
+    def _ltot_mean(self, pdg: int, energy: float) -> float:
         return self.MEAN_ALPHAS[pdg] * energy**self.MEAN_BETAS[pdg] * self._scale
 
-    def _ltot_sigma(self, pdg: int, energy: float):
+    def _ltot_sigma(self, pdg: int, energy: float) -> float:
         return self.SIGMA_ALPHAS[pdg] * energy**self.SIGMA_BETAS[pdg] * self._scale
 
-    def _shape(self, pdg: int, energy: float):
+    def _shape(self, pdg: int, energy: float) -> rv_frozen:
         return stats.gamma(self.GAMMA_A[pdg](energy),
                            scale=self.medium.lrad / self.GAMMA_B[pdg])
 
-    def ltot_dist(self, pdg: int, energy: float):
+    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
-    def avg(self, pdg: int, energy: float):
+    def avg(self, pdg: int, energy: float) -> Shower:
         return Shower(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
 
     def sample(self,
                pdg: int,
                energy: float,
-               rng: Optional[Generator] = None):
+               rng: Optional[Generator] = None) -> Shower:
         if rng is None:
             rng = np.random.default_rng(42)
         return Shower(self.ltot_dist(pdg, energy).rvs(random_state=rng),
@@ -134,28 +134,28 @@ class ShowerModel(ModelBase):
     Based on: TBD
     """
     @staticmethod
-    def aprime(a):
+    def aprime(a: float) -> float:
         """
         Function to transform a into range (0,1)
         """
         return 1./np.sqrt(a)
 
     @staticmethod
-    def bprime(b):
+    def bprime(b: float) -> float:
         """
         Function to transform b into range (0,1)
         """
         return 1./(1.+b**2)
 
     @staticmethod
-    def a(aprime):
+    def a(aprime: float) -> float:
         """
         Function to transform a' with domain (0,1) back to a
         """
         return 1./aprime**2
 
     @staticmethod
-    def b(bprime):
+    def b(bprime: float) -> float:
         """
         Function to transform b' with domain (0,1) back to b
         """
@@ -168,17 +168,16 @@ class ShowerModel(ModelBase):
         self.medium = medium
         self._scale = ltot_scale(self.FLUKA_MEDIUM, self.medium)
 
-    def ltot_dist(self, pdg: int, energy: float):
-        return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
+    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+        pass
     
-    def avg(self, pdg: int, energy: float):
-        return Shower(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
+    def avg(self, pdg: int, energy: float) -> Shower:
+        pass
 
     def sample(self,
                pdg: int,
                energy: float,
-               rng: Optional[Generator] = None):
+               rng: Optional[Generator] = None) ->Shower:
         if rng is None:
             rng = np.random.default_rng(42)
-        return Shower(self.ltot_dist(pdg, energy).rvs(random_state=rng),
-                      self._shape(pdg, energy))
+        pass
