@@ -1,13 +1,27 @@
 import numpy as np
+from numpy.random import Generator
 from scipy import stats
+from typing import Optional, TYPE_CHECKING
 from .media import Medium
+
+if TYPE_CHECKING:
+    from scipy.stats._distn_infrastructure import rv_frozen
 
 
 def ltot_scale(m0: 'Medium', m1: 'Medium'):
     return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
+
+
+class Shower:
+    def __init__(self, ltot: float, shape: 'rv_frozen'):
+        self.ltot = ltot
+        self.shape = shape
+
+    def dldx(self, x):
+        return self.ltot * self.shape.pdf(x)
         
 
-class RWShower:
+class RWShowerGenerator:
     """
     Calculates Cherenkov light yield and profile for EM and Hadronic showers,
     managing density and radiation length as material properties.
@@ -50,18 +64,27 @@ class RWShower:
         self.medium = medium
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
 
-    def ltot_mean(self, pdg: int, energy: float):
+    def _ltot_mean(self, pdg: int, energy: float):
         return self.MEAN_ALPHAS[pdg] * energy**self.MEAN_BETAS[pdg] * self._scale
 
-    def ltot_sigma(self, pdg: int, energy: float):
+    def _ltot_sigma(self, pdg: int, energy: float):
         return self.SIGMA_ALPHAS[pdg] * energy**self.SIGMA_BETAS[pdg] * self._scale
 
-    def ltot(self, pdg: int, energy: float):
-        return stats.norm(self.ltot_mean(pdg, energy), self.ltot_sigma(pdg, energy))
-    
-    def gamma(self, pdg: int, energy: float):
+    def _shape(self, pdg: int, energy: float):
         return stats.gamma(self.GAMMA_A[pdg](energy),
                            scale=self.medium.lrad / self.GAMMA_B[pdg])
 
-    def dldx(self, pdg: int, energy: float):
-        return lambda x: self.ltot_mean(pdg, energy) * self.gamma(pdg, energy).pdf(x)
+    def ltot_dist(self, pdg: int, energy: float):
+        return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
+    
+    def avg(self, pdg: int, energy: float):
+        return Shower(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
+
+    def sample(self,
+               pdg: int,
+               energy: float,
+               rng: Optional[Generator] = None):
+        if rng is None:
+            rng = np.random.default_rng(42)
+        return Shower(self.ltot_dist(pdg, energy).rvs(random_state=rng),
+                      self._shape(pdg, energy))

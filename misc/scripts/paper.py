@@ -30,8 +30,8 @@ def fig2():
         _row = dfem.iloc[_]
         plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
 
-    rwth = model.RWShower(MEDIUM_FLUKA)
-    plt.plot(xs, rwth.dldx(11, ene)(xs), c="k",
+    rwth = model.RWShowerGenerator(MEDIUM_FLUKA)
+    plt.plot(xs, rwth.avg(11, ene).dldx(xs), c="k",
              label=r"1 TeV $e^-$ (RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")
@@ -59,8 +59,8 @@ def fig2():
     )
 
     xs = np.linspace(bins[0], bins[-1], 1000)
-    plt.plot(xs, rwth.ltot(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013)")
-    plt.plot(xs, rwth.ltot(211, ene).pdf(xs), "k:", label=r"1 TeV $\pi^+$ (Rädel 2012)")
+    plt.plot(xs, rwth.ltot_dist(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013)")
+    plt.plot(xs, rwth.ltot_dist(211, ene).pdf(xs), "k:", label=r"1 TeV $\pi^+$ (Rädel 2012)")
 
     plt.legend(loc="upper left")
     plt.xlim(xmin=bins[0])
@@ -88,19 +88,19 @@ def fig3():
     nruns = 100
     for _ in range(nruns):
         plt.plot(xs,
-                 npem[_, :nbins],
+                 npem[_, :nbins] / npem[_, nbins+1],
                  color=colors[0],
                  label=rf"1 TeV $e^-$ ({nruns} runs)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
     for _ in range(nruns):
         plt.plot(xs,
-                 nppi[_, :nbins],
+                 nppi[_, :nbins] / nppi[_, nbins+1],
                  color=colors[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} runs)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
-    plt.ylabel(rf'${DLDX_LABEL}$')
+    plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
     plt.ylim(ymin=0)
@@ -188,19 +188,19 @@ def fig5():
 
     for _ in range(nruns):
         plt.plot(xs,
-                 npem[_, nbins+1] * stats.gamma(npem[_, nbins+2], scale=MEDIUM_FLUKA.lrad/npem[_, nbins+3]).pdf(xs),
+                 stats.gamma(npem[_, nbins+2], scale=MEDIUM_FLUKA.lrad/npem[_, nbins+3]).pdf(xs),
                  color=colors[0],
                  label=rf"1 TeV $e^-$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
     for _ in range(nruns):
         plt.plot(xs,
-                 nppi[_, nbins+1] * stats.gamma(nppi[_, nbins+2], scale=MEDIUM_FLUKA.lrad/nppi[_, nbins+3]).pdf(xs),
+                 stats.gamma(nppi[_, nbins+2], scale=MEDIUM_FLUKA.lrad/nppi[_, nbins+3]).pdf(xs),
                  color=colors[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
-    plt.ylabel(rf'${DLDX_LABEL}$')
+    plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
     plt.ylim(ymin=0)
