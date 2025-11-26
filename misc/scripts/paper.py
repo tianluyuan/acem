@@ -2,7 +2,7 @@ import numpy as np
 from scipy import stats
 from matplotlib import pyplot as plt
 
-from shosim import model, media, util
+from shosim import model, util
 
 plt.style.use("paper-sans")
 prop_cycle = plt.rcParams["axes.prop_cycle"]
@@ -10,9 +10,6 @@ colors = prop_cycle.by_key()["color"]
 
 DLDX_LABEL = r"\text{d}\hat{\ell}/\text{d}x"
 LTOT_LABEL = r"\hat{\ell}_\text{tot}"
-
-MEDIUM_FLUKA = media.Medium(0.9216, 1.33)
-
 
 def fig2():
     plt.clf()
@@ -30,7 +27,7 @@ def fig2():
         _row = dfem.iloc[_]
         plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
 
-    rwth = model.RWShowerGenerator(MEDIUM_FLUKA)
+    rwth = model.RWShowerModel(model.ShowerModel.FLUKA_MEDIUM)
     plt.plot(xs, rwth.avg(11, ene).dldx(xs), c="k",
              label=r"1 TeV $e^-$ (RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
@@ -188,14 +185,18 @@ def fig5():
 
     for _ in range(nruns):
         plt.plot(xs,
-                 stats.gamma(npem[_, nbins+2], scale=MEDIUM_FLUKA.lrad/npem[_, nbins+3]).pdf(xs),
+                 stats.gamma(
+                     npem[_, nbins+2],
+                     scale=model.ShowerModel.FLUKA_MEDIUM.lrad/npem[_, nbins+3]).pdf(xs),
                  color=colors[0],
                  label=rf"1 TeV $e^-$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
     for _ in range(nruns):
         plt.plot(xs,
-                 stats.gamma(nppi[_, nbins+2], scale=MEDIUM_FLUKA.lrad/nppi[_, nbins+3]).pdf(xs),
+                 stats.gamma(
+                     nppi[_, nbins+2],
+                     scale=model.ShowerModel.FLUKA_MEDIUM.lrad/nppi[_, nbins+3]).pdf(xs),
                  color=colors[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,

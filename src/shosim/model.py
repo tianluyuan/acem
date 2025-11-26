@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import numpy as np
 from numpy.random import Generator
 from scipy import stats
@@ -9,11 +10,19 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-def ltot_scale(m0: 'Medium', m1: 'Medium'):
+def ltot_scale(m0: Medium, m1: Medium):
     return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
 
 
 class Shower:
+    """
+    A one-dimensional representation of the Cherenkov-weighted track lengths of a particle shower, along the shower axis.
+
+    Parameters
+    ----------
+    ltot (float) : The total Cherenkov-weighted track length
+    shape (rv_frozen) : A frozen scipy.stats distribution that describes the shape of the shower profile
+    """
     def __init__(self, ltot: float, shape: 'rv_frozen'):
         self.ltot = ltot
         self.shape = shape
@@ -32,7 +41,24 @@ class Shower:
         return self.ltot * self.shape.pdf(x)
         
 
-class RWShowerGenerator:
+class ModelBase(ABC):
+    @abstractmethod
+    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+        pass
+
+    @abstractmethod
+    def avg(self, pdg: int, energy: float) -> Shower:
+        pass
+
+    @abstractmethod
+    def sample(self,
+               pdg: int,
+               energy: float,
+               rng: Optional[Generator] = None) -> Shower:
+        pass
+
+
+class RWShowerModel(ModelBase):
     """
     Generates shower profiles for Cherenkov light yields, given a Medium.
 
@@ -68,9 +94,10 @@ class RWShowerGenerator:
                22: 0.64526,
                211: 0.33833116}
 
+    # density and nphase used in Geant4 MC
     G4_MEDIUM = Medium(0.91, 1.33)
 
-    def __init__(self, medium: 'Medium'):
+    def __init__(self, medium: Medium):
         self.medium = medium
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
 
@@ -83,6 +110,63 @@ class RWShowerGenerator:
     def _shape(self, pdg: int, energy: float):
         return stats.gamma(self.GAMMA_A[pdg](energy),
                            scale=self.medium.lrad / self.GAMMA_B[pdg])
+
+    def ltot_dist(self, pdg: int, energy: float):
+        return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
+    
+    def avg(self, pdg: int, energy: float):
+        return Shower(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
+
+    def sample(self,
+               pdg: int,
+               energy: float,
+               rng: Optional[Generator] = None):
+        if rng is None:
+            rng = np.random.default_rng(42)
+        return Shower(self.ltot_dist(pdg, energy).rvs(random_state=rng),
+                      self._shape(pdg, energy))
+
+
+class ShowerModel(ModelBase):
+    """
+    Generates shower profiles for Cherenkov light yields, given a Medium. Includes fluctuations in shape and nuclear effects for total light yield.
+
+    Based on: TBD
+    """
+    @staticmethod
+    def aprime(a):
+        """
+        Function to transform a into range (0,1)
+        """
+        return 1./np.sqrt(a)
+
+    @staticmethod
+    def bprime(b):
+        """
+        Function to transform b into range (0,1)
+        """
+        return 1./(1.+b**2)
+
+    @staticmethod
+    def a(aprime):
+        """
+        Function to transform a' with domain (0,1) back to a
+        """
+        return 1./aprime**2
+
+    @staticmethod
+    def b(bprime):
+        """
+        Function to transform b' with domain (0,1) back to b
+        """
+        return np.sqrt(1./bprime-1.)
+
+    # density and nphase used in FLUKA MC
+    FLUKA_MEDIUM = Medium(0.9216, 1.33)
+
+    def __init__(self, medium: Medium):
+        self.medium = medium
+        self._scale = ltot_scale(self.FLUKA_MEDIUM, self.medium)
 
     def ltot_dist(self, pdg: int, energy: float):
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
