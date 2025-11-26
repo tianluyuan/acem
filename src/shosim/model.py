@@ -18,14 +18,23 @@ class Shower:
         self.ltot = ltot
         self.shape = shape
 
+    def __repr__(self):
+        """
+        Provides a comprehensive string representation of the object.
+        """
+        return (
+            f'Shower('
+            f'ltot={self.ltot}, '
+            f'shape={self.shape!r})'
+        )
+
     def dldx(self, x: 'npt.ArrayLike'):
         return self.ltot * self.shape.pdf(x)
         
 
 class RWShowerGenerator:
     """
-    Calculates Cherenkov light yield and profile for EM and Hadronic showers,
-    managing density and radiation length as material properties.
+    Generates shower profiles for Cherenkov light yields, given a Medium.
 
     Based on: https://doi.org/10.1016/j.astropartphys.2013.01.015
     """
