@@ -17,7 +17,7 @@ description = "Approximations of Cherenkov yields for particle showers"
 readme = "README.md"
 license = {file = "LICENSE"}
 
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 dependencies = [
   "numpy >= 1.17",
   "scipy >= 1.4"

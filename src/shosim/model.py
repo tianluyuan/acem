@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from importlib.resources import files, as_file
-from typing import Callable, Dict
+from typing import Callable, Dict, NamedTuple
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
@@ -9,14 +9,14 @@ from scipy import stats
 from scipy.stats._distn_infrastructure import rv_frozen
 from .media import Medium
 from .pdg import FLUKA2PDG
-from .math import efn, lin, cbc, qrt
+from .math import efn, lin, cbc, qrt, BSpline, make_knots
 
 
 def ltot_scale(m0: Medium, m1: Medium):
     return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
 
 
-class Shower:
+class Shower1D(NamedTuple):
     """
     A one-dimensional representation of the Cherenkov-weighted track lengths of a particle shower, along the shower axis.
 
@@ -25,23 +25,12 @@ class Shower:
     ltot (float) : The total Cherenkov-weighted track length
     shape (rv_frozen) : A frozen scipy.stats distribution that describes the shape of the shower profile
     """
-    def __init__(self, ltot: float, shape: rv_frozen):
-        self.ltot = ltot
-        self.shape = shape
-
-    def __repr__(self) -> str:
-        """
-        Provides a comprehensive string representation of the object.
-        """
-        return (
-            f'Shower('
-            f'ltot={self.ltot}, '
-            f'shape={self.shape!r})'
-        )
+    ltot: float
+    shape: rv_frozen
 
     def dldx(self, x: npt.ArrayLike) -> np.ndarray:
         return self.ltot * self.shape.pdf(x)
-        
+
 
 class ModelBase(ABC):
     @abstractmethod
@@ -49,17 +38,17 @@ class ModelBase(ABC):
         pass
 
     @abstractmethod
-    def avg(self, pdg: int, energy: float) -> Shower:
+    def avg(self, pdg: int, energy: float) -> Shower1D:
         pass
 
     @abstractmethod
     def sample(self,
                pdg: int,
-               energy: float) -> Shower:
+               energy: float) -> Shower1D:
         pass
 
 
-class RWShowerModel(ModelBase):
+class RWParametrization1D(ModelBase):
     """
     Generates shower profiles for Cherenkov light yields, given a Medium.
 
@@ -104,7 +93,7 @@ class RWShowerModel(ModelBase):
     }
 
     # density and nphase used in Geant4 MC
-    G4_MEDIUM = Medium(0.91, 1.33)
+    G4_MEDIUM: Medium = Medium(0.91, 1.33)
 
     def __init__(self, medium: Medium,
                  rng: Generator | None=None):
@@ -126,17 +115,17 @@ class RWShowerModel(ModelBase):
     def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
-    def avg(self, pdg: int, energy: float) -> Shower:
-        return Shower(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
+    def avg(self, pdg: int, energy: float) -> Shower1D:
+        return Shower1D(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
 
     def sample(self,
                pdg: int,
-               energy: float) -> Shower:
-        return Shower(self.ltot_dist(pdg, energy).rvs(random_state=self._rng),
-                      self._shape(pdg, energy))
+               energy: float) -> Shower1D:
+        return Shower1D(self.ltot_dist(pdg, energy).rvs(random_state=self._rng),
+                        self._shape(pdg, energy))
 
 
-class ShowerModel(ModelBase):
+class Parametrization1D(ModelBase):
     """
     Generates shower profiles for Cherenkov light yields, given a Medium. Includes fluctuations in shape and nuclear effects for total light yield.
 
@@ -171,17 +160,28 @@ class ShowerModel(ModelBase):
         return np.sqrt(1./bprime-1.)
 
     @staticmethod
-    def load_resources(subdir: str) -> Dict[int, np.ndarray | Dict[str, np.ndarray]]:
+    def load_ltots() -> Dict[int, np.lib.npyio.NpzFile]:
         data = {}
-        for entry in (files("shosim") / "resources" / subdir).iterdir():
+        for entry in (files("shosim") / "resources" / "ltot").iterdir():
             if not entry.is_file():
                 continue
             with as_file(entry) as fpath:
                 data[FLUKA2PDG[Path(entry.name).stem]] = np.load(fpath)
         return data
 
-    LTOTS = load_resources("ltot")
-    THETAS = load_resources("theta")
+    @staticmethod
+    def load_thetas() -> Dict[int, BSpline]:
+        data = {}
+        for entry in (files("shosim") / "resources" / "theta").iterdir():
+            if not entry.is_file():
+                continue
+            with as_file(entry) as fpath:
+                theta = np.load(fpath)
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta, make_knots(theta.shape[0]-3,theta.shape[1]-3,theta.shape[2]-3))
+        return data
+
+    LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
+    THETAS: Dict[int, BSpline] = load_thetas()
     # density and nphase used in FLUKA MC
     FLUKA_MEDIUM = Medium(0.9216, 1.33)
 
@@ -225,29 +225,30 @@ class ShowerModel(ModelBase):
         elif len(sgns) == 4:
             sdist = stats.norminvgauss
         else:
-            raise RuntimeError('Unable to match distributions')
+            raise RuntimeError('Unable to match l_tot distributions')
 
         sdist_args = []
         for i, sgn in enumerate(sgns):
             _p = ltpars[f'p{i}']
             if len(_p) == 2:
-                sdist_args.append(sgn * efn(energy, lin, *_p))
+                _fn = lin
             elif len(_p) == 4:
-                sdist_args.append(sgn * efn(energy, cbc, *_p))
+                _fn = cbc
             elif len(_p) == 5:
-                sdist_args.append(sgn * efn(energy, qrt, *_p))
+                _fn = qrt
             else:
                 raise RuntimeError('Unable to match parameters to function')
+            sdist_args.append(sgn * efn(energy, _fn, *_p))
         # scipy distributions are loc-scale families so we only need
         # to rescale the loc and scale parameters
         sdist_args[-1] *= self._scale
         sdist_args[-2] *= self._scale
         return sdist(*sdist_args)
 
-    def avg(self, pdg: int, energy: float) -> Shower:
+    def avg(self, pdg: int, energy: float) -> Shower1D:
         pass
 
     def sample(self,
                pdg: int,
-               energy: float) ->Shower:
+               energy: float) ->Shower1D:
         pass
