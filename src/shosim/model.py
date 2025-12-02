@@ -186,7 +186,7 @@ class ShowerModel(ModelBase):
     FLUKA_MEDIUM = Medium(0.9216, 1.33)
 
     def __init__(self, medium: Medium,
-                 converter: Callable | None=None,
+                 converter: Callable[[int], int] | None=None,
                  rng: Generator | None=None):
         self.medium: Medium = medium
         self._rng: Generator = np.random.default_rng(42) if rng is None else rng
@@ -196,7 +196,15 @@ class ShowerModel(ModelBase):
     
     def _default_converter(self, pdg_code: int):
         """
-        Generalizes existing parametrizations to a larger subset of PDG codes
+        Default generalization of existing parametrizations to a
+        larger subset of PDG codes. Here, the only assumptions are:
+
+        * antiparticles (negative PDG codes) are assumed to be
+        equivalent to their particle counterparts.
+        * K0 is treated as a 0.5 mixture of K0_L and K0_S
+
+        User defined converters can be passed as an argument when
+        during instantiation
         """
         _pdg = abs(pdg_code)
 
@@ -230,6 +238,8 @@ class ShowerModel(ModelBase):
                 sdist_args.append(sgn * efn(energy, qrt, *_p))
             else:
                 raise RuntimeError('Unable to match parameters to function')
+        # scipy distributions are loc-scale families so we only need
+        # to rescale the loc and scale parameters
         sdist_args[-1] *= self._scale
         sdist_args[-2] *= self._scale
         return sdist(*sdist_args)
