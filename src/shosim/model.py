@@ -109,8 +109,9 @@ class RWShowerModel(ModelBase):
     def __init__(self, medium: Medium,
                  rng: Generator | None=None):
         self.medium = medium
-        self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
         self._rng = np.random.default_rng(42) if rng is None else rng
+        self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
+        assert self._scale >= 0.
 
     def _ltot_mean(self, pdg: int, energy: float) -> float:
         return self.MEAN_ALPHAS[pdg] * energy**self.MEAN_BETAS[pdg] * self._scale
@@ -188,9 +189,10 @@ class ShowerModel(ModelBase):
                  converter: Callable | None=None,
                  rng: Generator | None=None):
         self.medium: Medium = medium
-        self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
         self._rng: Generator = np.random.default_rng(42) if rng is None else rng
         self._converter: Callable = self._default_converter if converter is None else converter
+        self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
+        assert self._scale >= 0.
     
     def _default_converter(self, pdg_code: int):
         """
@@ -217,17 +219,20 @@ class ShowerModel(ModelBase):
         else:
             raise RuntimeError('Unable to match distributions')
 
+        sdist_args = []
         for i, sgn in enumerate(sgns):
             _p = ltpars[f'p{i}']
             if len(_p) == 2:
-                ltfns.append((lin, sgn, _p))
+                sdist_args.append(sgn * efn(energy, lin, *_p))
             elif len(_p) == 4:
-                ltfns.append((cbc, sgn, _p))
+                sdist_args.append(sgn * efn(energy, cbc, *_p))
             elif len(_p) == 5:
-                ltfns.append((qrt, sgn, _p))
+                sdist_args.append(sgn * efn(energy, qrt, *_p))
             else:
                 raise RuntimeError('Unable to match parameters to function')
-
+        sdist_args[-1] *= self._scale
+        sdist_args[-2] *= self._scale
+        return sdist(*sdist_args)
 
     def avg(self, pdg: int, energy: float) -> Shower:
         pass
