@@ -81,6 +81,7 @@ class BSpline(NamedTuple):
         poly_coefs - Array with shape (c_a-3, c_b-3, c_E-3, 4, 4, 4) . 
         poly_coefs[i,j,k,q,r,s] is the coeficient on the a**q b**r E**s term in the space right after knot a_k[i+3], b_k[j+3], and E_k[k+3]
         """
+        assert np.all(np.asarray([len(_) for _ in knots]) == np.asarray([_ + 7 for _ in coefs.shape]))
         a_k = knots[0]
         b_k = knots[1]
         E_k = knots[2]

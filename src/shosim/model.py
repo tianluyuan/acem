@@ -177,7 +177,7 @@ class Parametrization1D(ModelBase):
                 continue
             with as_file(entry) as fpath:
                 theta = np.load(fpath)
-                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta, make_knots(theta.shape[0]-3,theta.shape[1]-3,theta.shape[2]-3))
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta, make_knots(*theta.shape))
         return data
 
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
