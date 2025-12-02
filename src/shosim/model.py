@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
+from importlib.resources import files, as_file
+from typing import Callable, Dict
 import numpy as np
 from numpy.random import Generator
+import numpy.typing as npt
+from pandas.core.indexing import construct_1d_array_from_inferred_fill_value
 from scipy import stats
-from typing import Optional, TYPE_CHECKING
+from scipy.stats._distn_infrastructure import rv_frozen
 from .media import Medium
-
-if TYPE_CHECKING:
-    from scipy.stats._distn_infrastructure import rv_frozen
-    import numpy.typing as npt
 
 
 def ltot_scale(m0: Medium, m1: Medium):
@@ -23,7 +24,7 @@ class Shower:
     ltot (float) : The total Cherenkov-weighted track length
     shape (rv_frozen) : A frozen scipy.stats distribution that describes the shape of the shower profile
     """
-    def __init__(self, ltot: float, shape: 'rv_frozen'):
+    def __init__(self, ltot: float, shape: rv_frozen):
         self.ltot = ltot
         self.shape = shape
 
@@ -37,13 +38,13 @@ class Shower:
             f'shape={self.shape!r})'
         )
 
-    def dldx(self, x: 'npt.ArrayLike') -> 'npt.ArrayLike':
+    def dldx(self, x: npt.ArrayLike) -> np.ndarray:
         return self.ltot * self.shape.pdf(x)
         
 
 class ModelBase(ABC):
     @abstractmethod
-    def ltot_dist(self, pdg: int, energy: float) -> 'rv_frozen':
+    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
         pass
 
     @abstractmethod
@@ -53,8 +54,7 @@ class ModelBase(ABC):
     @abstractmethod
     def sample(self,
                pdg: int,
-               energy: float,
-               rng: Optional[Generator]) -> Shower:
+               energy: float) -> Shower:
         pass
 
 
@@ -65,41 +65,51 @@ class RWShowerModel(ModelBase):
     Based on: https://doi.org/10.1016/j.astropartphys.2013.01.015
     """
 
-    MEAN_ALPHAS = {11: 532.07078881,
-                   -11: 532.11320598,
-                   22: 532.08540905,
-                   211: 333.55182722}
-    MEAN_BETAS = {11: 1.00000211,
-                  -11: 0.99999254,
-                  22: 0.99999877,
-                  211: 1.03662217}
-
-    SIGMA_ALPHAS = {11: 5.78170887,
-                    -11: 5.73419669,
-                    22: 5.66586567,
-                    211: 119.20455395}
-    SIGMA_BETAS = {11: 0.5,
-                   -11: 0.5,
-                   22: 0.5,
-                   211: 0.80772057}
-
-    GAMMA_A = {
+    MEAN_ALPHAS: Dict[int, float] = {
+        11: 532.07078881,
+        -11: 532.11320598,
+        22: 532.08540905,
+        211: 333.55182722
+    }
+    MEAN_BETAS: Dict[int, float] = {
+        11: 1.00000211,
+        -11: 0.99999254,
+        22: 0.99999877,
+        211: 1.03662217
+    }
+    SIGMA_ALPHAS: Dict[int, float] = {
+        11: 5.78170887,
+        -11: 5.73419669,
+        22: 5.66586567,
+        211: 119.20455395
+    }
+    SIGMA_BETAS: Dict[int, float] = {
+        11: 0.5,
+        -11: 0.5,
+        22: 0.5,
+        211: 0.80772057
+    }
+    GAMMA_A: Dict[int, Callable] = {
         11: lambda x: 2.01849 + 0.63176 * np.log(x),
         -11: lambda x: 2.00035 + 0.63190 * np.log(x),
         22: lambda x: 2.83923 + 0.58209 * np.log(x),
         211: lambda x: 1.58357292 + 0.41886807 * np.log(x),
     }
-    GAMMA_B = {11: 0.63207,
-               -11: 0.63008,
-               22: 0.64526,
-               211: 0.33833116}
+    GAMMA_B: Dict[int, float] = {
+        11: 0.63207,
+        -11: 0.63008,
+        22: 0.64526,
+        211: 0.33833116
+    }
 
     # density and nphase used in Geant4 MC
     G4_MEDIUM = Medium(0.91, 1.33)
 
-    def __init__(self, medium: Medium):
+    def __init__(self, medium: Medium,
+                 rng: Generator | None=None):
         self.medium = medium
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
+        self._rng = np.random.default_rng(42) if rng is None else rng
 
     def _ltot_mean(self, pdg: int, energy: float) -> float:
         return self.MEAN_ALPHAS[pdg] * energy**self.MEAN_BETAS[pdg] * self._scale
@@ -107,11 +117,11 @@ class RWShowerModel(ModelBase):
     def _ltot_sigma(self, pdg: int, energy: float) -> float:
         return self.SIGMA_ALPHAS[pdg] * energy**self.SIGMA_BETAS[pdg] * self._scale
 
-    def _shape(self, pdg: int, energy: float) -> 'rv_frozen':
+    def _shape(self, pdg: int, energy: float) -> rv_frozen:
         return stats.gamma(self.GAMMA_A[pdg](energy),
                            scale=self.medium.lrad / self.GAMMA_B[pdg])
 
-    def ltot_dist(self, pdg: int, energy: float) -> 'rv_frozen':
+    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
     def avg(self, pdg: int, energy: float) -> Shower:
@@ -119,11 +129,8 @@ class RWShowerModel(ModelBase):
 
     def sample(self,
                pdg: int,
-               energy: float,
-               rng: Optional[Generator] = None) -> Shower:
-        if rng is None:
-            rng = np.random.default_rng(42)
-        return Shower(self.ltot_dist(pdg, energy).rvs(random_state=rng),
+               energy: float) -> Shower:
+        return Shower(self.ltot_dist(pdg, energy).rvs(random_state=self._rng),
                       self._shape(pdg, energy))
 
 
@@ -161,21 +168,66 @@ class ShowerModel(ModelBase):
         """
         return np.sqrt(1./bprime-1.)
 
+    @staticmethod
+    def load_resources(subdir: str) -> Dict[int, np.ndarray | Dict[str, np.ndarray]]:
+        data = {}
+        for entry in (files("shosim") / "resources" / subdir).iterdir():
+            if not entry.is_file():
+                continue
+            with as_file(entry) as fpath:
+                data[ShowerModel.FLUKA2PDG[Path(entry.name).stem]] = np.load(fpath)
+        return data
+
+    PDG2FLUKA: Dict[int, str] = {
+        11:'ELECTRON',
+        22:'PHOTON',
+        211:'PION+',
+        130:'KAONLONG',
+        310:'KAONSHRT',
+        321:'KAON+',
+        2212:'PROTON',
+        2112:'NEUTRON',
+        3122:'LAMBDA',
+        3222:'SIGMA+',
+        3112:'SIGMA-',
+        3322:'XSIZERO',
+        3312:'XSI-',
+        3334:'OMEGA-',
+    }
+    FLUKA2PDG: Dict[str, int] = {value: key for key, value in PDG2FLUKA.items()}
+
+    LTOTS = load_resources("ltot")
+    THETAS = load_resources("theta")
     # density and nphase used in FLUKA MC
     FLUKA_MEDIUM = Medium(0.9216, 1.33)
 
-    def __init__(self, medium: Medium):
-        self.medium = medium
-        self._scale = ltot_scale(self.FLUKA_MEDIUM, self.medium)
-
+    def __init__(self, medium: Medium,
+                 converter: Callable | None=None,
+                 rng: Generator | None=None):
+        self.medium: Medium = medium
+        self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
+        self._rng: Generator = np.random.default_rng(42) if rng is None else rng
+        self._converter: Callable = self._default_converter if converter is None else converter
     
+    def _default_converter(self, pdg_code: int):
+        """
+        Generalizes existing parametrizations to a larger subset of PDG codes
+        """
+        _pdg = abs(pdg_code)
+
+        if _pdg == 311:
+            # K0
+            return 130 if self._rng.uniform() < 0.5 else 310
+
+        return _pdg
+
+    def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+        pass
+
     def avg(self, pdg: int, energy: float) -> Shower:
         pass
 
     def sample(self,
                pdg: int,
-               energy: float,
-               rng: Optional[Generator] = None) ->Shower:
-        if rng is None:
-            rng = np.random.default_rng(42)
+               energy: float) ->Shower:
         pass
