@@ -20,9 +20,9 @@ def lin(x, t0, t1):
 
 
 def make_knots(
-        a_reg: int,
-        b_reg: int,
-        E_reg: int,
+        c_a: int,
+        c_b: int,
+        c_E: int,
         a_min: float = 0.0,
         a_max: float = 1.0,
         b_min: float = 0.0,
@@ -36,7 +36,7 @@ def make_knots(
     Params:
         a_reg - number of valid regions in the a dimension
         b_reg - number of valid regions in the b dimension
-        E_reg - number of valid regions in the E dimension
+        c_E - number of valid regions in the E dimension
         a_min - minumum value in the a dimension, [Default = 0]
         a_max - maximum value in the a dimension, [Default = 1]
         b_min - minumum value in the b dimension, [Default = 0]
@@ -49,9 +49,6 @@ def make_knots(
         b_k - 1d array of knots for the b dimension
         E_k - 1d array of knots for the E dimension
     """
-    c_a = a_reg + 3
-    c_b = b_reg + 3
-    c_E = E_reg + 3
     ## Define the knots
     a_k = np.linspace(a_min,a_max,c_a - 3 + 1)
     b_k = np.linspace(b_min,b_max,c_b - 3 + 1)
@@ -164,13 +161,12 @@ class BSpline(NamedTuple):
         b_i = np.searchsorted(b_k[3:-3], b, side='right')
         E_i = np.searchsorted(E_k[3:-3], E, side='right')
 
-        poly_coefs = self.poly_coefs
-        a_i -= (a_i > poly_coefs.shape[0]) # so that things don't break at the upper boundaries
-        b_i -= (b_i > poly_coefs.shape[1])
-        E_i -= (E_i > poly_coefs.shape[2])
+        a_i -= (a_i > self.poly_coefs.shape[0]) # so that things don't break at the upper boundaries
+        b_i -= (b_i > self.poly_coefs.shape[1])
+        E_i -= (E_i > self.poly_coefs.shape[2])
         Z = 0
         for l in range(4):
             for m in range(4):
                 for n in range(4):
-                    Z += poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * E**n
+                    Z += self.poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * E**n
         return Z
