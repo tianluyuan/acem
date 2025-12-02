@@ -150,7 +150,7 @@ def fig4():
     pcolors = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2]]
     plinest = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-."]
     for i, particle in enumerate(particles):
-        dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", False, True)
+        dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", util.load_npy, clean=False)
         npeaks1 = np.asarray([(dats[_][:,507]==1).sum() for _ in dats])
         npeaks2 = np.asarray([(dats[_][:,507]==2).sum() for _ in dats])
         npeaksx = np.asarray([((dats[_][:, 507] != 1) & (dats[_][:, 507] != 2)).sum() for _ in dats])

@@ -5,10 +5,11 @@ from typing import Callable, Dict
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from pandas.core.indexing import construct_1d_array_from_inferred_fill_value
 from scipy import stats
 from scipy.stats._distn_infrastructure import rv_frozen
 from .media import Medium
+from .pdg import FLUKA2PDG
+from .math import efn, lin, cbc, qrt
 
 
 def ltot_scale(m0: Medium, m1: Medium):
@@ -175,26 +176,8 @@ class ShowerModel(ModelBase):
             if not entry.is_file():
                 continue
             with as_file(entry) as fpath:
-                data[ShowerModel.FLUKA2PDG[Path(entry.name).stem]] = np.load(fpath)
+                data[FLUKA2PDG[Path(entry.name).stem]] = np.load(fpath)
         return data
-
-    PDG2FLUKA: Dict[int, str] = {
-        11:'ELECTRON',
-        22:'PHOTON',
-        211:'PION+',
-        130:'KAONLONG',
-        310:'KAONSHRT',
-        321:'KAON+',
-        2212:'PROTON',
-        2112:'NEUTRON',
-        3122:'LAMBDA',
-        3222:'SIGMA+',
-        3112:'SIGMA-',
-        3322:'XSIZERO',
-        3312:'XSI-',
-        3334:'OMEGA-',
-    }
-    FLUKA2PDG: Dict[str, int] = {value: key for key, value in PDG2FLUKA.items()}
 
     LTOTS = load_resources("ltot")
     THETAS = load_resources("theta")
@@ -222,7 +205,29 @@ class ShowerModel(ModelBase):
         return _pdg
 
     def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
-        pass
+        ltpars = self.LTOTS[self._converter(pdg)]
+        # since the fit is performed in log-space, distribution
+        # parameters with all-negative values are abs'd the stored 's'
+        # keeps track of the final sign to apply
+        sgns = ltpars['s']
+        if len(sgns) == 3:
+            sdist = stats.skewnorm
+        elif len(sgns) == 4:
+            sdist = stats.norminvgauss
+        else:
+            raise RuntimeError('Unable to match distributions')
+
+        for i, sgn in enumerate(sgns):
+            _p = ltpars[f'p{i}']
+            if len(_p) == 2:
+                ltfns.append((lin, sgn, _p))
+            elif len(_p) == 4:
+                ltfns.append((cbc, sgn, _p))
+            elif len(_p) == 5:
+                ltfns.append((qrt, sgn, _p))
+            else:
+                raise RuntimeError('Unable to match parameters to function')
+
 
     def avg(self, pdg: int, energy: float) -> Shower:
         pass
