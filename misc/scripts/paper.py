@@ -27,7 +27,7 @@ def fig2():
         _row = dfem.iloc[_]
         plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
 
-    rwth = model.RWShowerModel(model.ShowerModel.FLUKA_MEDIUM)
+    rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.avg(11, ene).dldx(xs), c="k",
              label=r"1 TeV $e^-$ (RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
@@ -187,7 +187,7 @@ def fig5():
         plt.plot(xs,
                  stats.gamma(
                      npem[_, nbins+2],
-                     scale=model.ShowerModel.FLUKA_MEDIUM.lrad/npem[_, nbins+3]).pdf(xs),
+                     scale=model.Shower1D.FLUKA_MEDIUM.lrad/npem[_, nbins+3]).pdf(xs),
                  color=colors[0],
                  label=rf"1 TeV $e^-$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
@@ -196,7 +196,7 @@ def fig5():
         plt.plot(xs,
                  stats.gamma(
                      nppi[_, nbins+2],
-                     scale=model.ShowerModel.FLUKA_MEDIUM.lrad/nppi[_, nbins+3]).pdf(xs),
+                     scale=model.Shower1D.FLUKA_MEDIUM.lrad/nppi[_, nbins+3]).pdf(xs),
                  color=colors[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,

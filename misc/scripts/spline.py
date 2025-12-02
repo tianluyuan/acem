@@ -70,146 +70,6 @@ b_k = sc.interpolate.interp1d(np.arange(c_b - 3 + 1),b_k,bounds_error=False,fill
 E_k = sc.interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_E + 1))
 knots = (a_k, b_k, E_k)
 
-'''
-Makes the knots for the given Coefficients
-Provided a range of valid values for each of the three parameters
-Params:
-    a_reg - number of valid regions in the a dimension
-    b_reg - number of valid regions in the b dimension
-    E_reg - number of valid regions in the E dimension
-    a_min - minumum value in the a dimension, [Default = 0]
-    a_max - maximum value in the a dimension, [Default = 1]
-    b_min - minumum value in the b dimension, [Default = 0]
-    b_max - maximum value in the b dimension, [Default = 1]
-    E_min - minumum value in the E dimension, [Default = 1]
-    E_max - maximum value in the E dimension, [Default = 6]
-            Note that returned knot values will extend past these values for b-spline fitting purposes
-Return:
-    a_k - 1d array of knots for the a dimension
-    b_k - 1d array of knots for the b dimension
-    E_k - 1d array of knots for the E dimension
-'''
-def make_knots(a_reg,b_reg,E_reg,a_min=0,a_max=1,b_min=0,b_max=1,E_min=1,E_max=6):
-    c_a = a_reg + 3
-    c_b = b_reg + 3
-    c_E = E_reg + 3
-    ## Define the knots
-    a_k = np.linspace(a_min,a_max,c_a - 3 + 1)
-    b_k = np.linspace(b_min,b_max,c_b - 3 + 1)
-    E_k = np.linspace(E_min,E_max,c_E - 3 + 1)
-    ## add knot values on above and below the range of interest
-    a_k = sc.interpolate.interp1d(np.arange(c_a - 3 + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_a + 1))
-    b_k = sc.interpolate.interp1d(np.arange(c_b - 3 + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_b + 1))
-    E_k = sc.interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_E + 1))
-    return a_k,b_k,E_k
-
-'''
-Converts basis spline coefficients into coefficients in the polynomial basis
-Params
-    Theta - Array with shape (c_a,c_b,c_E) of coefficients for a basis spline
-    knots: tuple (a_k,b_k,E_k) where each element is the 1d array of the knots defining the spline regions along each dimension
-           if not supplied, make_knots is called with the default values.
-Returns
-    Coefs - Array with shape (c_a-3, c_b-3, c_E-3, 4, 4, 4) . 
-           Coefs[i,j,k,q,r,s] is the coeficient on the a**q b**r E**s term in the space right after knot a_k[i+3], b_k[j+3], and E_k[k+3]
-'''
-def BSpline2Poly(Theta,knots=None):
-    if knots == None:
-        knots = make_knots(Theta.shape[0]-3,Theta.shape[1]-3,Theta.shape[2]-3)
-    a_k = knots[0]
-    b_k = knots[1]
-    E_k = knots[2]
-
-    D_a = a_k[1] - a_k[0]
-    D_b = b_k[1] - b_k[0]
-    D_E = E_k[1] - E_k[0]
-    Coefs = np.zeros((Theta.shape[0] - 3,Theta.shape[1] - 3,Theta.shape[2] - 3,4,4,4))
-    BSplinePieces_a = np.zeros((Theta.shape[0],4,4))
-    BSplinePieces_b = np.zeros((Theta.shape[1],4,4))
-    BSplinePieces_E = np.zeros((Theta.shape[2],4,4))
-    '''
-    BSplinePieces_?[i,j,k] holds the coefficient on the x**k term of the j-th piece of the i-th basis spline
-    '''
-    for i in range(Theta.shape[0]):
-        for j in range(4):
-            BSplinePieces_a[i,j,:] = BSplinePiece(j,a_k[0],D_a,i)
-    for i in range(Theta.shape[1]):
-        for j in range(4):
-            BSplinePieces_b[i,j,:] = BSplinePiece(j,b_k[0],D_b,i)
-    for i in range(Theta.shape[2]):
-        for j in range(4):
-            BSplinePieces_E[i,j,:] = BSplinePiece(j,E_k[0],D_E,i)
-    for q in range(4):
-        for r in range(4):
-            for s in range(4):
-                for l in range(4):
-                    for m in range(4):
-                        for n in range(4):
-                            Coefs[:,:,:,q,r,s] += Theta[l:Coefs.shape[0]+l,m:Coefs.shape[1]+m,n:Coefs.shape[2]+n] \
-                                * np.tile(BSplinePieces_a[l:Coefs.shape[0]+l,3-l,q].reshape((Coefs.shape[0],1,1)),(1,Coefs.shape[1],Coefs.shape[2])) \
-                                * np.tile(BSplinePieces_b[m:Coefs.shape[1]+m,3-m,r].reshape((1,Coefs.shape[1],1)),(Coefs.shape[0],1,Coefs.shape[2])) \
-                                * np.tile(BSplinePieces_E[n:Coefs.shape[2]+n,3-n,s].reshape((1,1,Coefs.shape[2])),(Coefs.shape[0],Coefs.shape[1],1))
-
-    return Coefs
-
-'''
-constructs the coefficients for a 3rd order BSpline with evenly space knots in the polynomial basis
-Params:
-    piece_num - which of the four sections of the BSpline basis element (integer 0 (leftmost) to 3 (rightmost))
-    x_0 - leftmost knot position
-    D - distance between knots
-    n - index of basis spline (0 corresponds to basis element originating from x_0)
-Returns:
-    coefs: coefs[i] is the coefficient on the x**i term in the specified section of the basis element
-'''
-def BSplinePiece(piece_num,x_0,D,n):
-    match piece_num:
-        case 0:
-            return np.array([-D**3*n**3 - 3*D**2*n**2*x_0 - 3*D*n*x_0**2 - x_0**3,3*D**2*n**2 + 6*D*n*x_0 + 3*x_0**2,-3*D*n - 3*x_0,1])/(6*D**3)
-        case 1:
-            return np.array([3*D**3*n**3 + 12*D**3*n**2 + 12*D**3*n + 4*D**3 + 9*D**2*n**2*x_0 + 24*D**2*n*x_0 + 12*D**2*x_0 + 9*D*n*x_0**2 + 12*D*x_0**2 + 3*x_0**3,
-                            -9*D**2*n**2 - 24*D**2*n - 12*D**2 - 18*D*n*x_0 - 24*D*x_0 - 9*x_0**2,
-                            9*D*n + 12*D + 9*x_0,-3])/(6*D**3)
-        case 2:
-            return np.array([-3*D**3*n**3 - 24*D**3*n**2 - 60*D**3*n - 44*D**3 - 9*D**2*n**2*x_0 - 48*D**2*n*x_0 - 60*D**2*x_0 - 9*D*n*x_0**2 - 24*D*x_0**2 - 3*x_0**3,
-                             9*D**2*n**2 + 48*D**2*n + 60*D**2 + 18*D*n*x_0 + 48*D*x_0 + 9*x_0**2,
-                             -9*D*n - 24*D - 9*x_0,3])/(6*D**3)
-        case 3:
-            return np.array([D**3*n**3 + 12*D**3*n**2 + 48*D**3*n + 64*D**3 + 3*D**2*n**2*x_0 + 24*D**2*n*x_0 + 48*D**2*x_0 + 3*D*n*x_0**2 + 12*D*x_0**2 + x_0**3,
-                            -3*D**2*n**2 - 24*D**2*n - 48*D**2 - 6*D*n*x_0 - 24*D*x_0 - 3*x_0**2,
-                            3*D*n + 12*D + 3*x_0,-1])/(6*D**3)
-
-
-'''
-Given a 6d array of coefficients, evaluate the spline at the given array of points
-Params:
-    a,b,E - input parameter values
-    Coefs - Coefs[i,j,k,q,r,s] is the coefficient on the a**q b**r E**s term in the i-th a region, j-th b region, and k-th E region
-    knots: tuple (a_k,b_k,E_k) where each element is the 1d array of the knots defining the spline regions along each dimension
-           if not supplied, make_knots is called with the default values.
-Returns:
-    Result of evaluating BSpline at the provided a,b,E values
-'''
-def Eval_from_Coefs(a,b,E,Coefs,knots=None):
-    ## if knots aren't specified generate them from default values
-    if knots == None:
-        knots = make_knots(Coefs.shape[0],Coefs.shape[1],Coefs.shape[2])
-    a_k = knots[0]
-    b_k = knots[1]
-    E_k = knots[2]
-    a_i = np.searchsorted(a_k[3:-3], a, side='right')
-    b_i = np.searchsorted(b_k[3:-3], b, side='right')
-    E_i = np.searchsorted(E_k[3:-3], E, side='right')
-
-    a_i -= (a_i > Coefs.shape[0]) # so that things don't break at the upper boundaries
-    b_i -= (b_i > Coefs.shape[1])
-    E_i -= (E_i > Coefs.shape[2])
-    Z = 0
-    for l in range(4):
-        for m in range(4):
-            for n in range(4):
-                Z += Coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * E**n
-    return Z
 
 '''
 Integrate each region of the spline at a specified energy and return a grid of the integral in each region
@@ -432,8 +292,8 @@ if __name__ == '__main__':
             # print(f'        Least squares R^2: {res[3]:5.3e}')
             print(f'        Convergence / Niterations: {res[1]:}')
             print(f'        Min / max theta: {theta.min()}, {theta.max()}')
-            Coefs_sofar = BSpline2Poly(theta.reshape((c_a,c_b,c_E)) - coeff_shift, knots)
             if perform_likelihood_test:
+                Coefs_sofar = BSpline2Poly(theta.reshape((c_a,c_b,c_E)) - coeff_shift, knots)
                 print('    Performing likelihood test...')
                 lls = [likelihood_test(test_sample[:,0,i],test_sample[:,1,i],log_ens[i],Coefs_sofar,knots) for i in range(n_E)]
                 print(f'        Log-likelihood: {np.sum(lls):5.3e}')
@@ -443,7 +303,7 @@ if __name__ == '__main__':
                 ## Convert the coefficients to the polynomial basis (1,x,x**2,x**3,...)
                 ## Then save to "output_file"
                 ## Shift to convert into a density
-                np.save(output_file, Coefs_sofar)
+                # np.save(output_file, Coefs_sofar)
                 np.save(f'theta_{output_file}',
                         theta.reshape((c_a,c_b,c_E)) - coeff_shift)
 
