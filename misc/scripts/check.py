@@ -2,52 +2,87 @@
 import numpy as np
 import scipy as sp
 import sys
-import Sample, FitSpline
 from matplotlib import pyplot as plt
+from shosim.model import Parametrization1D, RWParametrization1D
+from shosim import media
 
-x = np.load(sys.argv[1])
-en = float(sys.argv[2])
-abx = Sample.sample_ab(x, en, 1000, ga_inv=lambda a: a, gb_inv=lambda b: b)
-xs = np.arange(0, 1, 0.01)
-X, Y = np.meshgrid(xs, xs)
-knots = FitSpline.knots
-print('a_k:', knots[0])
-print('b_k:', knots[1])
-print('E_k:', knots[2])
 
-theta = np.load(f'theta_{sys.argv[1]}')
-bsp = sp.interpolate.NdBSpline(knots, theta, 3)
+if __name__=='__main__':
+    logE = float(sys.argv[1])
+    curr = Parametrization1D(media.IC3)
+    prev = RWParametrization1D(media.IC3)
 
-for Z in [bsp(np.asarray([X, Y, np.ones_like(X)*np.log10(en)]).T).T,
-          FitSpline.Eval_from_Coefs(X, Y, np.log10(en), x, knots)]:
-    plt.clf();plt.pcolormesh(X, Y, np.exp(Z))
-    plt.colorbar()
-    plt.xlim(0,1)
-    plt.ylim(0,1)
-    plt.xlabel("a'")
-    plt.ylabel("b'")
-    plt.scatter(abx[0], abx[1], s=0.2, c='r')
+    N = 100
+    x = np.linspace(0, 1, N)
+    y = np.linspace(0, 1, N)
 
-    plt.figure()
-    plt.pcolormesh(X, Y, Z)
-    plt.colorbar()
-    plt.xlim(0,1)
-    plt.ylim(0,1)
-    plt.scatter(abx[0], abx[1], s=0.2, c='r')
+    X, Y = np.meshgrid(x, y)
+
+    for pdg in curr.THETAS.keys():
+        Z= curr.THETAS[pdg](X, Y, logE)
+
+        plt.figure(figsize=(8, 6))
+        plot = plt.pcolormesh(X, Y, np.exp(Z), cmap='viridis', shading='auto')
+
+        cbar = plt.colorbar(plot, ax=plt.gca(), label='PDF')
+
+        plt.plot(*curr.THETAS[pdg].sample_ab(3,40).T, 'k.', label='Rejection sampling')
+        plt.plot(*curr.THETAS[pdg]._legacy_sample_ab(3,40, num_quad_nodes=10).T, 'r.', label='Binary sampling')
+        plt.legend()
+        plt.title(f"{pdg}")
+        plt.xlabel("a'")
+        plt.ylabel("b'")
+
     plt.show()
 
-a = np.arange(0., 1., 0.001)
-plt.clf()
-plt.plot(a, FitSpline.Eval_from_Coefs(a, 0.3, np.log10(en), x, knots))
-[plt.axvline(_, linestyle='--', linewidth=0.5) for _ in knots[0]]
-plt.xlabel('a\'')
-plt.ylabel('spline value')
-plt.show()
+    xs=np.arange(0, 3000)
+    for pdg in [11, 22, 211]:
+        plt.figure()
+        [plt.plot(xs, _.dldx(xs), color='k', linewidth=0.5) for _ in curr.sample(pdg, 10**logE, 10)]
+        [plt.plot(xs, _.dldx(xs), color='r', linewidth=0.5, linestyle='--') for _ in prev.sample(pdg, 10**logE, 10)]
+    plt.xlim(0, 2000)
+    plt.xlabel('x [cm]')
+    plt.ylabel('dl/dx')
+    plt.title(f"{pdg}")
+    plt.show()
 
-b = np.arange(0., 1., 0.001)
-plt.clf()
-plt.plot(b, FitSpline.Eval_from_Coefs(0.3, b, np.log10(en), x, knots))
-[plt.axvline(_, linestyle='--', linewidth=0.5) for _ in knots[0]]
-plt.xlabel('b\'')
-plt.ylabel('spline value')
-plt.show()
+    for pdg, B in curr.THETAS.items():
+        bsp = sp.interpolate.NdBSpline(B.knots, B.coefs, 3)
+
+        Z0 = B(X, Y, logE)
+        Z1 = bsp(np.asarray([X, Y, np.ones_like(X)*logE]).T).T
+
+        plt.figure()
+        plt.pcolormesh(X, Y, np.exp(Z0)-np.exp(Z1))
+        plt.colorbar()
+        plt.xlim(0,1)
+        plt.ylim(0,1)
+        plt.xlabel("a'")
+        plt.ylabel("b'")
+        plt.title(f"{pdg} exp(B)-exp(NdB)")
+
+        plt.figure()
+        plt.pcolormesh(X, Y, Z0-Z1)
+        plt.colorbar()
+        plt.xlim(0,1)
+        plt.ylim(0,1)
+        plt.xlabel("a'")
+        plt.ylabel("b'")
+        plt.title(f"{pdg} B-NdB")
+    
+        ap = np.arange(0., 1., 0.001)
+        plt.figure()
+        plt.plot(ap, B(ap, 0.3, logE))
+        [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.knots[0]]
+        plt.xlabel('a\'')
+        plt.ylabel('spline value')
+        plt.title(f"{pdg}")
+
+        bp = np.arange(0., 1., 0.001)
+        plt.figure()
+        plt.plot(bp, B(0.3, bp, logE))
+        [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.knots[1]]
+        plt.xlabel('b\'')
+        plt.ylabel('spline value')
+        plt.title(f"{pdg}")
+    plt.show()
