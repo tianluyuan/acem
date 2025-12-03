@@ -9,6 +9,11 @@ from shosim import media
 
 if __name__=='__main__':
     logE = float(sys.argv[1])
+    try:
+        seed = int(sys.argv[2])
+    except IndexError:
+        seed = 12
+    rng = np.random.default_rng(seed)
     curr = Parametrization1D(media.IC3)
     prev = RWParametrization1D(media.IC3)
 
@@ -26,8 +31,8 @@ if __name__=='__main__':
 
         cbar = plt.colorbar(plot, ax=plt.gca(), label='PDF')
 
-        plt.plot(*curr.THETAS[pdg].sample_ab(logE,40).T, 'k.', label='Rejection sampling')
-        plt.plot(*curr.THETAS[pdg]._legacy_sample_ab(logE,40, num_quad_nodes=10).T, 'r.', label='Binary sampling')
+        plt.plot(*curr.THETAS[pdg].sample_ab(logE,40,random_state=rng).T, 'k.', label='Rejection sampling')
+        plt.plot(*curr.THETAS[pdg]._legacy_sample_ab(logE,40, num_quad_nodes=10, random_state=rng).T, 'r.', label='Binary sampling')
         plt.legend()
         plt.title(f"{pdg}")
         plt.xlabel("a'")

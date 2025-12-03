@@ -353,7 +353,6 @@ class BSpline(NamedTuple):
                           num_quad_nodes: int=7) -> np.ndarray:
         """
         Samples (a', b') for given log10E via binary search sampling, kept for historical purposes.
-        The resulting sample does not seem to match rejection sampling, noticeably in the tails.
 
         Parameters
         ----------
