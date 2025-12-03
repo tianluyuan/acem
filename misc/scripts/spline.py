@@ -71,49 +71,6 @@ E_k = sc.interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill
 knots = (a_k, b_k, E_k)
 
 
-'''
-Integrate each region of the spline at a specified energy and return a grid of the integral in each region
-Params:
-    Coefs: Coefs[i,j,k,q,r,s] is the coefficient on the a**q b**r E**s term in the intersection of the 
-           i-th a region, j-th b region, and k-th E region
-    knots: tuple (a_k,b_k,E_k) where each element is the 1d array of the knots defining the spline regions along each dimension
-           if not supplied, make_knots is called with the default values.
-    num_quad_nodes: number of nodes used for guassian quadrature, [Default = 7]
-Returns:
-    result[i,j,k] is the integral over the intersection of the i-th a region, j-th b region, and k-th E region
-'''
-def integrate_grid(Coefs,E,knots=None,num_quad_nodes=7):
-    ## if knots aren't specified generate them from default values
-    if knots == None:
-        knots = make_knots(Coefs.shape[0],Coefs.shape[1],Coefs.shape[2])
-    a_k = knots[0]
-    b_k = knots[1]
-    E_k = knots[2]
-
-    ## create nodes for gaussian quadrature
-    nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
-    weights = np.tile(weights_1d,(num_quad_nodes,1)) * np.tile(weights_1d,(num_quad_nodes,1)).T
-    nodes = np.tile(nodes_1d,(num_quad_nodes,1))
-    nodes_array = np.tile(nodes.reshape(1,1,num_quad_nodes,num_quad_nodes),(Coefs.shape[0],Coefs.shape[1],1,1))
-    nodesT_array = np.tile(nodes.T.reshape(1,1,num_quad_nodes,num_quad_nodes),(Coefs.shape[0],Coefs.shape[1],1,1))
-    weights_array = np.tile(weights.reshape(1,1,num_quad_nodes,num_quad_nodes),(Coefs.shape[0],Coefs.shape[1],1,1))
-    E_i = np.searchsorted(E_k[3:-3],E,side='right')
-    E_i -= (E_i > Coefs.shape[2])
-
-    Z = np.zeros((*Coefs.shape[:2],num_quad_nodes,num_quad_nodes))
-    ## Z[grid of regions a][grid of regions b][grid of nodes a][grid of nodes b]
-
-    l_a = np.tile(a_k[3:-4].reshape(-1,1,1,1),(1,Coefs.shape[1],num_quad_nodes,num_quad_nodes))
-    h_a = np.tile(a_k[4:-3].reshape(-1,1,1,1),(1,Coefs.shape[1],num_quad_nodes,num_quad_nodes))
-    l_b = np.tile(b_k[3:-4].reshape(1,-1,1,1),(Coefs.shape[0],1,num_quad_nodes,num_quad_nodes))
-    h_b = np.tile(b_k[4:-3].reshape(1,-1,1,1),(Coefs.shape[0],1,num_quad_nodes,num_quad_nodes))
-
-    for l in range(4):
-        for m in range(4):
-            for n in range(4):
-                Z += np.tile(Coefs[:,:,E_i-1,l,m,n].reshape((Coefs.shape[0],Coefs.shape[1],1,1)),(1,1,num_quad_nodes,num_quad_nodes)) \
-                        * (nodes_array*(h_a-l_a)/2 + (l_a+h_a)/2)**l * (nodesT_array*(h_b-l_b)/2 + (l_b+h_b)/2)**m * E**n
-    return np.sum(np.exp(Z) * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4,axis=(2,3))
 
 '''
 perform a likelihood_test on the provided sample using the given Coefs

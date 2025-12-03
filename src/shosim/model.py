@@ -9,7 +9,7 @@ from scipy import stats
 from scipy.stats._distn_infrastructure import rv_frozen
 from .media import Medium
 from .pdg import FLUKA2PDG
-from .math import efn, lin, cbc, qrt, BSpline, make_knots
+from .math import efn, lin, cbc, qrt, BSpline
 
 
 def ltot_scale(m0: Medium, m1: Medium):
@@ -113,14 +113,59 @@ class RWParametrization1D(ModelBase):
                            scale=self.medium.lrad / self.GAMMA_B[pdg])
 
     def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+        """
+        Retrieves the ltot distribution for a specified particle
+        type and energy.  The returned object can be used to sample
+        random values of the total Cherenkov track length, or to
+        calculate its statistical properties.
+
+        Parameters
+        ----------
+        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
+             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: The energy of the particle in GeV
+
+        Returns
+        -------
+        rv_frozen: A frozen normal distribution object from scipy.stats.
+        """
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
     def avg(self, pdg: int, energy: float) -> Shower1D:
+        """
+        Retrieves the average Shower1D object for a specified
+        particle type and energy.
+
+        Parameters
+        ----------
+        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
+             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: The energy of the particle in GeV
+
+        Returns
+        -------
+        Shower1D: The average 1D shower profile
+
+        """
         return Shower1D(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
 
     def sample(self,
                pdg: int,
                energy: float) -> Shower1D:
+        """
+        Samples an individual Shower1D object for a specified
+        particle type and energy. Only ltot is randomly sampled.
+
+        Parameters
+        ----------
+        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
+             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: The energy of the particle in GeV
+
+        Returns
+        -------
+        Shower1D: The sampled 1D shower profile
+        """
         return Shower1D(self.ltot_dist(pdg, energy).rvs(random_state=self._rng),
                         self._shape(pdg, energy))
 
@@ -177,7 +222,7 @@ class Parametrization1D(ModelBase):
                 continue
             with as_file(entry) as fpath:
                 theta = np.load(fpath)
-                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta, make_knots(*theta.shape))
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta)
         return data
 
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
@@ -194,7 +239,7 @@ class Parametrization1D(ModelBase):
         self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
         assert self._scale >= 0.
     
-    def _default_converter(self, pdg_code: int):
+    def _default_converter(self, pdg: int):
         """
         Default generalization of existing parametrizations to a
         larger subset of PDG codes. Here, the only assumptions are:
@@ -206,7 +251,7 @@ class Parametrization1D(ModelBase):
         User defined converters can be passed as an argument when
         during instantiation
         """
-        _pdg = abs(pdg_code)
+        _pdg = abs(pdg)
 
         if _pdg == 311:
             # K0
@@ -214,7 +259,27 @@ class Parametrization1D(ModelBase):
 
         return _pdg
 
+    def _shape(self, a: float, b: float) -> rv_frozen:
+        return stats.gamma(a, scale=self.medium.lrad / b)
+
     def ltot_dist(self, pdg: int, energy: float) -> rv_frozen:
+        """
+        Retrieves the ltot distribution for a specified particle
+        type and energy.  The returned object can be used to sample
+        random values of the total Cherenkov track length, or to
+        calculate its statistical properties.
+
+        Parameters
+        ----------
+        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
+             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: The energy of the particle in GeV
+
+        Returns
+        -------
+        rv_frozen: A frozen skewnormal (EM) or NIG (otherwise) distribution
+        object from scipy.stats.
+        """
         ltpars = self.LTOTS[self._converter(pdg)]
         # since the fit is performed in log-space, distribution
         # parameters with all-negative values are abs'd the stored 's'
@@ -246,9 +311,45 @@ class Parametrization1D(ModelBase):
         return sdist(*sdist_args)
 
     def avg(self, pdg: int, energy: float) -> Shower1D:
-        pass
+        """
+        Retrieves the average Shower1D object for a specified
+        particle type and energy.
+
+        Parameters
+        ----------
+        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
+             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: The energy of the particle in GeV
+
+        Returns
+        -------
+        Shower1D: The average 1D shower profile
+
+        Note
+        ----
+        This is taken as the average shape over parameters a and b, not the
+        average over dl/dx
+        """
+        bspl = self.THETAS[pdg]
+        a_avg = self.a(bspl.integrate_grid(np.log10(energy), (1, 0)).sum())
+        b_avg = self.b(bspl.integrate_grid(np.log10(energy), (0, 1)).sum())
+        return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a_avg, b_avg))
 
     def sample(self,
                pdg: int,
                energy: float) ->Shower1D:
+        """
+        Samples an individual Shower1D object for a specified
+        particle type and energy.
+
+        Parameters
+        ----------
+        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
+             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: The energy of the particle in GeV
+
+        Returns
+        -------
+        Shower1D: The sampled 1D shower profile
+        """
         pass
