@@ -1,53 +1,33 @@
-#!/usr/bin/env python
-
-# Given a Coefs_ab file that represents the probability distribution of the a and b parameteres, we use this function to sample from it
-
-# In[122]:
-
-
 import numpy as np
 from scipy.interpolate import interp1d
 
-
-# In[123]:
-
-## Create knot locations
-def get_knots(Coefs, Energy_Min=10, Energy_Max=1e6):
-    a_k = interp1d(np.arange(Coefs.shape[0] + 1), np.linspace(0, 1, Coefs.shape[0] + 1),
-                   bounds_error=False, fill_value="extrapolate")(np.arange(-3, Coefs.shape[0] + 4))
-    b_k = interp1d(np.arange(Coefs.shape[1] + 1), np.linspace(0, 1, Coefs.shape[1] + 1),
-                   bounds_error=False, fill_value="extrapolate")(np.arange(-3, Coefs.shape[1] + 4))
-    E_k = interp1d(np.arange(Coefs.shape[2] + 1), np.linspace(np.log10(Energy_Min), np.log10(Energy_Max), Coefs.shape[2] + 1),
-                   bounds_error=False, fill_value="extrapolate")(np.arange(-3, Coefs.shape[2] + 4))
-    return a_k, b_k, E_k
-
-"""
-Creates samples from the spline specified by Coefs, at a specified energy E
-Required Parameters:
-    Coefs: Coefficients that represent the spline
-    E: Energy value (GeV) at which we are taking samples
-    num_samples: The number of samples to take
-Optional Parameters:
-    sample_depth: Number of times to divide regions during binary grid sampling. A sample_depth
-                  of n will give a sample precision of of 1/2^n times the size of each spline region
-                  [Default: 10]
-    binning_offset: Determines whether to random offset to reduce binning errors [Default: True]
-    num_quad_nodes: Number of nodes used for gaussian quadrature [Default: 7]
-    raw_output: Determines whether to output raw values from the spline, or their transformed values [Default: False]
-    ga_inv: Inverse transform function for the a parameter [Default: a**2]
-    gb_inv: Inverse transform function for the b parameter [Defaule sqrt((1/b) - 1)]
-"""
-def sample_ab(Coefs, E, num_samples,
+def sample_ab(Coefs, knots, E, num_samples,
               sample_depth=7, binning_offset=True,
               num_quad_nodes=7, raw_output=False,
               ga_inv=lambda a: a**-2, gb_inv=lambda b: np.sqrt(b**-1 - 1),
               rng=np.random.default_rng(250528)):
+    """
+    Creates samples from the spline specified by Coefs, at a specified energy E
+    Required Parameters:
+        Coefs: Coefficients that represent the spline
+        E: Energy value (GeV) at which we are taking samples
+        num_samples: The number of samples to take
+    Optional Parameters:
+        sample_depth: Number of times to divide regions during binary grid sampling. A sample_depth
+                      of n will give a sample precision of of 1/2^n times the size of each spline region
+                      [Default: 10]
+        binning_offset: Determines whether to random offset to reduce binning errors [Default: True]
+        num_quad_nodes: Number of nodes used for gaussian quadrature [Default: 7]
+        raw_output: Determines whether to output raw values from the spline, or their transformed values [Default: False]
+        ga_inv: Inverse transform function for the a parameter [Default: a**2]
+        gb_inv: Inverse transform function for the b parameter [Defaule sqrt((1/b) - 1)]
+    """
     ## Create nodes and weights for 2d gaussian quadrature
     nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
     weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T
 
     E = np.log10(E)
-    a_k, b_k, E_k = get_knots(Coefs)
+    a_k, b_k, E_k = knots
     ## Subrouting to integrate the spline within a specified region
     def integrate(l_a, h_a, l_b, h_b, Coefs_abE):
         nodes_ = nodes_1d.reshape(1, num_quad_nodes, 1)
@@ -67,7 +47,6 @@ def sample_ab(Coefs, E, num_samples,
     nodes = np.tile(nodes_1d, (num_quad_nodes, 1))
     nodes_array = np.tile(nodes.reshape(1, 1, num_quad_nodes, num_quad_nodes), (CoefsE.shape[0], CoefsE.shape[1], 1, 1))
     nodesT_array = np.tile(nodes.T.reshape(1, 1, num_quad_nodes, num_quad_nodes), (CoefsE.shape[0], CoefsE.shape[1], 1, 1))
-    weights_array = np.tile(weights.reshape(1, 1, num_quad_nodes, num_quad_nodes), (CoefsE.shape[0], CoefsE.shape[1], 1, 1))
 
     Z = np.zeros((*CoefsE.shape[:2], num_quad_nodes, num_quad_nodes))
     """
@@ -97,7 +76,7 @@ def sample_ab(Coefs, E, num_samples,
     l_b = np.reshape(b_k[b_regions + 3], (num_samples, 1, 1))
     h_b = np.reshape(b_k[b_regions + 4], (num_samples, 1, 1))
 
-    for division in range(sample_depth):
+    for _ in range(sample_depth):
         m_a = (l_a + h_a)/2
         # Integrate left and right of m_a
         Z_left = integrate(l_a, m_a, l_b, h_b, Coefs_abE)
@@ -122,37 +101,3 @@ def sample_ab(Coefs, E, num_samples,
     if raw_output:
         return res_a.reshape(-1), res_b.reshape(-1)
     return np.vectorize(ga_inv)(res_a.reshape(-1)), np.vectorize(gb_inv)(res_b.reshape(-1))
-
-# In[121]:
-
-
-"""
-Integrate each region of the spline at a specified energy and return a grid of the integral in region
-Useful for renormalization of spline and testing
-"""
-def integrate_grid(Coefs, E, num_quad_nodes=7):
-    nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
-    weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T
-    nodes = np.tile(nodes_1d, (num_quad_nodes, 1))
-    nodes_array = np.tile(nodes.reshape(1, 1, num_quad_nodes, num_quad_nodes), (Coefs.shape[0], Coefs.shape[1], 1, 1))
-    nodesT_array = np.tile(nodes.T.reshape(1, 1, num_quad_nodes, num_quad_nodes), (Coefs.shape[0], Coefs.shape[1], 1, 1))
-    weights_array = np.tile(weights.reshape(1, 1, num_quad_nodes, num_quad_nodes), (Coefs.shape[0], Coefs.shape[1], 1, 1))
-    E_i = np.vectorize(lambda E : bisect.bisect_right(E_k[3:-3], E))(E)
-    E_i -= (E_i > Coefs.shape[2])
-
-    Z = np.zeros((*Coefs.shape[:2], num_quad_nodes, num_quad_nodes))
-    """
-    Z[grid of regions a][grid of regions b][grid of nodes a][grid of nodes b]
-    """
-    l_a = np.tile(a_k[3:-4].reshape(-1, 1, 1, 1), (1, Coefs.shape[1], num_quad_nodes, num_quad_nodes))
-    h_a = np.tile(a_k[4:-3].reshape(-1, 1, 1, 1), (1, Coefs.shape[1], num_quad_nodes, num_quad_nodes))
-    l_b = np.tile(b_k[3:-4].reshape(1, -1, 1, 1), (Coefs.shape[0], 1, num_quad_nodes, num_quad_nodes))
-    h_b = np.tile(b_k[4:-3].reshape(1, -1, 1, 1), (Coefs.shape[0], 1, num_quad_nodes, num_quad_nodes))
-
-    for l in range(4):
-        for m in range(4):
-            for n in range(4):
-                Z += np.tile(Coefs[:, :, E_i-1, l, m, n].reshape((Coefs.shape[0], Coefs.shape[1], 1, 1)), (1, 1, num_quad_nodes, num_quad_nodes)) \
-                        * (nodes_array*(h_a-l_a)/2 + (l_a+h_a)/2)**l * (nodesT_array*(h_b-l_b)/2 + (l_b+h_b)/2)**m * E**n
-    return np.sum(np.exp(Z) * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4, axis=(2, 3))
-

@@ -317,16 +317,13 @@ class BSpline(NamedTuple):
                   random_state: None | Generator=None) -> np.ndarray:
         if random_state is None:
             random_state = np.random.default_rng(42)
-        Xmin, Xmax = [0., 1.]
-        Ymin, Ymax = [0., 1.]
         
-        samples = []
-
         ap, bp = self.mode(logE)
         f_max = self.__call__(ap, bp, logE)
+        samples = []
         while len(samples) < num_samples:
-            x_star = random_state.uniform(Xmin, Xmax)
-            y_star = random_state.uniform(Ymin, Ymax)
+            x_star = random_state.uniform()
+            y_star = random_state.uniform()
             z_star = random_state.uniform(0., f_max)
 
             if z_star <= self.__call__(x_star, y_star, logE):
