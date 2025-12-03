@@ -326,7 +326,7 @@ class BSpline(NamedTuple):
 
         Returns
         -------
-        ndarray of sampled np.array([(a', b')_0, ...])
+        ndarray of sampled np.array([(a', b')_0, (a', b')_1, ...])
         """
         if random_state is None:
             random_state = np.random.default_rng(42)
