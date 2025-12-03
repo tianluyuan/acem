@@ -45,10 +45,10 @@ if __name__=='__main__':
         plt.figure()
         [plt.plot(xs, _.dldx(xs), color='k', linewidth=0.5) for _ in curr.sample(pdg, 10**logE, 10)]
         [plt.plot(xs, _.dldx(xs), color='r', linewidth=0.5, linestyle='--') for _ in prev.sample(pdg, 10**logE, 10)]
-    plt.xlim(0, 2000)
-    plt.xlabel('x [cm]')
-    plt.ylabel('dl/dx')
-    plt.title(f"{pdg}")
+        plt.xlim(0, 2000)
+        plt.xlabel('x [cm]')
+        plt.ylabel('dl/dx')
+        plt.title(f"{pdg}")
     plt.show()
 
     for pdg, B in curr.THETAS.items():
@@ -79,7 +79,7 @@ if __name__=='__main__':
         plt.figure()
         plt.plot(ap, B(ap, 0.3, logE))
         [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.knots[0]]
-        plt.xlabel('a\'')
+        plt.xlabel("a'")
         plt.ylabel('spline value')
         plt.title(f"{pdg}")
 
@@ -87,7 +87,7 @@ if __name__=='__main__':
         plt.figure()
         plt.plot(bp, B(0.3, bp, logE))
         [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.knots[1]]
-        plt.xlabel('b\'')
+        plt.ylabel("b'")
         plt.ylabel('spline value')
         plt.title(f"{pdg}")
     plt.show()

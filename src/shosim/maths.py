@@ -330,7 +330,7 @@ class BSpline(NamedTuple):
         ndarray of sampled np.array([(a', b')_0, (a', b')_1, ...])
         """
         if random_state is None:
-            random_state = np.random.default_rng(42)
+            random_state = np.random.default_rng()
         
         ap, bp = self.mode(logE)
         f_max = self.__call__(ap, bp, logE)
@@ -359,7 +359,7 @@ class BSpline(NamedTuple):
         ----------
         logE: log10(logE [GeV])
         num_samples: number of (a', b') samples to draw
-        random_state: random_state state, if None initialize from scratch [Default: None]
+        random_state: rng state, if None initialize from scratch [Default: None]
         sample_depth: Number of times to divide regions during binary grid sampling.
                       A sample_depth of n will give a sample precision of of 1/2^n
                       times the size of each spline region [Default: 10]
@@ -377,7 +377,7 @@ class BSpline(NamedTuple):
         but is kept for historical purposes.
         """
         if random_state is None:
-            random_state = np.random.default_rng(42)
+            random_state = np.random.default_rng()
         ## Create nodes and weights for 2d gaussian quadrature
         nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
         weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T

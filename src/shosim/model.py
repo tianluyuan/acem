@@ -93,9 +93,9 @@ class RWParametrization1D(ModelBase):
     G4_MEDIUM: media.Medium = media.Medium(0.91, 1.33)
 
     def __init__(self, medium: media.Medium,
-                 rng: Generator | None=None):
+                 random_state: Generator | None=None):
         self.medium = medium
-        self._rng = np.random.default_rng(42) if rng is None else rng
+        self._random_state = np.random.default_rng() if random_state is None else random_state
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
         assert self._scale >= 0.
 
@@ -163,7 +163,7 @@ class RWParametrization1D(ModelBase):
         -------
         List[Shower1D]: The sampled 1D shower profile
         """
-        return [Shower1D(_, self._shape(pdg, energy)) for _ in self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._rng)]
+        return [Shower1D(_, self._shape(pdg, energy)) for _ in self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._random_state)]
 
 
 class Parametrization1D(ModelBase):
@@ -200,9 +200,9 @@ class Parametrization1D(ModelBase):
 
     def __init__(self, medium: media.Medium,
                  converter: Callable[[int], int] | None=None,
-                 rng: Generator | None=None):
+                 random_state: Generator | None=None):
         self.medium: media.Medium = medium
-        self._rng: Generator = np.random.default_rng(42) if rng is None else rng
+        self._random_state: Generator = np.random.default_rng() if random_state is None else random_state
         self._converter: Callable = self._default_converter if converter is None else converter
         self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
         assert self._scale >= 0.
@@ -223,7 +223,7 @@ class Parametrization1D(ModelBase):
 
         if _pdg == 311:
             # K0
-            return 130 if self._rng.uniform() < 0.5 else 310
+            return 130 if self._random_state.uniform() < 0.5 else 310
 
         return _pdg
 
@@ -320,8 +320,8 @@ class Parametrization1D(ModelBase):
         -------
         List[Shower1D]: The sampled 1D shower profile
         """
-        ltots = self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._rng)
+        ltots = self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._random_state)
         bspl = self.THETAS[pdg]
-        aps, bps = bspl.sample_ab(np.log10(energy), num_samples, random_state=self._rng).T
+        aps, bps = bspl.sample_ab(np.log10(energy), num_samples, random_state=self._random_state).T
 
         return [Shower1D(ltot, self._shape(a(ap), b(bp))) for ltot, ap, bp in zip(ltots, aps, bps)]
