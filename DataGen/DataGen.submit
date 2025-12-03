@@ -1,17 +1,26 @@
 universe = vanilla
-executable = /home/icrawsha/DataGen/DataGen_executable.sh
-arguments = $(Item)
+executable = DataGen_executable.sh
+arguments = $(Item) inp_gen.csv
 
-request_cpus = 5
+request_cpus = 1
 request_memory = 5GB
-request_disk = 30MB
+request_disk = 500MB
 
-output = out.$(Item)
-error = err.$(Item)
-log = log.$(Item)
+output = htc/out.$(Cluster).$(Item)
+error = htc/err.$(Cluster).$(Item)
+log = htc/log.$(Cluster).$(Item)
+
+transfer_input_files = inp_gen.csv,gen_inp.py,add_to_csv.py,inp2txt.sh,inpBase.txt
+transfer_output_files = 
+
+Requirements = HAS_CVMFS_icecube_opensciencegrid_org && has_avx2 && (KFLOPS > 2000000)
+chtc_want_el9 = true
+# +SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el9:latest"
+# +SingularityBindCVMFS = True
 
 
 should_transfer_files = YES
+when_to_transfer_output = ON_SUCCESS
 
-queue from seq 1 100 |
+queue from seq 0 9999 |
 

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shosim"
+dynamic = ["version"]
+authors = [
+  {name = "Ian Crawshaw", email = "icrawshaw@wisc.edu"},
+  {name = "Tianlu Yuan", email = "tyuan@icecube.wisc.edu"},
+]
+maintainers = [
+  {name = "Tianlu Yuan", email = "tyuan@icecube.wisc.edu"}
+]
+
+description = "Approximations of Cherenkov yields for particle showers"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+requires-python = ">= 3.10"
+dependencies = [
+  "numpy >= 1.17",
+  "scipy >= 1.4"
+]
+
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+
+[project.optional-dependencies]
+plotting = ["matplotlib>=3.2"]
+
+[project.urls]
+Repository = "https://github.com/ianRCrawshaw/Shower-Simulations/"
+
+[tool.setuptools.packages.find]
+where = ["src/"]
+
+[tool.setuptools_scm]
