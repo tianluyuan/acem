@@ -7,12 +7,12 @@ from numpy.random import Generator
 import numpy.typing as npt
 from scipy import stats
 from scipy.stats._distn_infrastructure import rv_frozen
-from .media import Medium
+from . import media
 from .pdg import FLUKA2PDG
-from .math import efn, lin, cbc, qrt, a, b, BSpline
+from .maths import efn, lin, cbc, qrt, a, b, BSpline
 
 
-def ltot_scale(m0: Medium, m1: Medium):
+def ltot_scale(m0: media.Medium, m1: media.Medium):
     return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
 
 
@@ -47,7 +47,7 @@ class ModelBase(ABC):
 
 class RWParametrization1D(ModelBase):
     """
-    Generates shower profiles for Cherenkov light yields, given a Medium.
+    Generates shower profiles for Cherenkov light yields, given a media.Medium.
 
     Based on: https://doi.org/10.1016/j.astropartphys.2013.01.015
     """
@@ -90,9 +90,9 @@ class RWParametrization1D(ModelBase):
     }
 
     # density and nphase used in Geant4 MC
-    G4_MEDIUM: Medium = Medium(0.91, 1.33)
+    G4_MEDIUM: media.Medium = media.Medium(0.91, 1.33)
 
-    def __init__(self, medium: Medium,
+    def __init__(self, medium: media.Medium,
                  rng: Generator | None=None):
         self.medium = medium
         self._rng = np.random.default_rng(42) if rng is None else rng
@@ -168,7 +168,7 @@ class RWParametrization1D(ModelBase):
 
 class Parametrization1D(ModelBase):
     """
-    Generates shower profiles for Cherenkov light yields, given a Medium. Includes fluctuations in shape and nuclear effects for total light yield.
+    Generates shower profiles for Cherenkov light yields, given a media.Medium. Includes fluctuations in shape and nuclear effects for total light yield.
 
     Based on: TBD
     """
@@ -196,12 +196,12 @@ class Parametrization1D(ModelBase):
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
     THETAS: Dict[int, BSpline] = load_thetas()
     # density and nphase used in FLUKA MC
-    FLUKA_MEDIUM = Medium(0.9216, 1.33)
+    FLUKA_MEDIUM = media.Medium(0.9216, 1.33)
 
-    def __init__(self, medium: Medium,
+    def __init__(self, medium: media.Medium,
                  converter: Callable[[int], int] | None=None,
                  rng: Generator | None=None):
-        self.medium: Medium = medium
+        self.medium: media.Medium = medium
         self._rng: Generator = np.random.default_rng(42) if rng is None else rng
         self._converter: Callable = self._default_converter if converter is None else converter
         self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)

@@ -208,8 +208,8 @@ class BSpline(NamedTuple):
         """
         Parameters
         ----------
-        a: first parameter for gamma distribution, transformed to lie on [0, 1]
-        b: second parameter for gamma distribution, transformed to lie on [0, 1]
+        a: first parameter for gamma distribution, a', transformed to lie on [0, 1]
+        b: second parameter for gamma distribution, b', transformed to lie on [0, 1]
         logE: primary particle energy in log10(logE [GeV])
 
         Returns
@@ -314,7 +314,7 @@ class BSpline(NamedTuple):
     def sample_ab(self,
                   logE: float,
                   num_samples: int,
-                  rng: None | Generator=None) -> np.ndarray:
+                  random_state: None | Generator=None) -> np.ndarray:
         """
         Samples (a', b') for given log10E via rejection sampling
 
@@ -322,22 +322,22 @@ class BSpline(NamedTuple):
         ----------
         logE: log10(logE [GeV])
         num_samples: number of (a', b') samples to draw
-        rng: rng state
+        random_state: random_state state
 
         Returns
         -------
         ndarray of sampled np.array([(a', b')_0, ...])
         """
-        if rng is None:
-            rng = np.random.default_rng(42)
+        if random_state is None:
+            random_state = np.random.default_rng(42)
         
         ap, bp = self.mode(logE)
         f_max = self.__call__(ap, bp, logE)
         samples = []
         while len(samples) < num_samples:
-            x_star = rng.uniform()
-            y_star = rng.uniform()
-            z_star = rng.uniform(0., f_max)
+            x_star = random_state.uniform()
+            y_star = random_state.uniform()
+            z_star = random_state.uniform(0., f_max)
 
             if z_star <= self.__call__(x_star, y_star, logE):
                 samples.append((x_star, y_star))
@@ -347,7 +347,7 @@ class BSpline(NamedTuple):
     def _legacy_sample_ab(self,
                           logE: float,
                           num_samples: int,
-                          rng: None | Generator=None,
+                          random_state: None | Generator=None,
                           sample_depth: int=7,
                           binning_offset: bool=True,
                           num_quad_nodes: int=7) -> np.ndarray:
@@ -359,7 +359,7 @@ class BSpline(NamedTuple):
         ----------
         logE: log10(logE [GeV])
         num_samples: number of (a', b') samples to draw
-        rng: rng state, if None initialize from scratch [Default: None]
+        random_state: random_state state, if None initialize from scratch [Default: None]
         sample_depth: Number of times to divide regions during binary grid sampling. A sample_depth
                       of n will give a sample precision of of 1/2^n times the size of each spline region
                       [Default: 10]
@@ -370,8 +370,8 @@ class BSpline(NamedTuple):
         -------
         ndarray of sampled np.array([(a', b')_0, ...])
         """
-        if rng is None:
-            rng = np.random.default_rng(42)
+        if random_state is None:
+            random_state = np.random.default_rng(42)
         ## Create nodes and weights for 2d gaussian quadrature
         nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
         weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T
@@ -413,7 +413,7 @@ class BSpline(NamedTuple):
         integrated_grid = np.sum(np.exp(Z) * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4, axis=(2, 3))
 
         ranges = np.insert(integrated_grid.reshape(-1).cumsum(), 0, 0)
-        indices = np.searchsorted(ranges, rng.random(size=num_samples)*ranges[-1]) - 1
+        indices = np.searchsorted(ranges, random_state.random(size=num_samples)*ranges[-1]) - 1
         a_regions = indices // CoefsE.shape[1]
         b_regions = indices % CoefsE.shape[1]
 
@@ -430,7 +430,7 @@ class BSpline(NamedTuple):
             # Integrate left and right of m_a
             Z_left = integrate(l_a, m_a, l_b, h_b, Coefs_abE)
             Z_right = integrate(m_a, h_a, l_b, h_b, Coefs_abE)
-            choose_left = rng.random(size=(num_samples, 1, 1)) < (Z_left / (Z_left + Z_right))
+            choose_left = random_state.random(size=(num_samples, 1, 1)) < (Z_left / (Z_left + Z_right))
             l_a = np.where(choose_left, l_a, m_a)
             h_a = np.where(choose_left, m_a, h_a)
 
@@ -438,12 +438,12 @@ class BSpline(NamedTuple):
             # Integrate above and bellow
             Z_bottom = integrate(l_a, h_a, l_b, m_b, Coefs_abE)
             Z_top = integrate(l_a, h_a, m_b, h_b, Coefs_abE)
-            choose_bottom = rng.random(size=(num_samples, 1, 1)) < (Z_bottom / (Z_bottom + Z_top))
+            choose_bottom = random_state.random(size=(num_samples, 1, 1)) < (Z_bottom / (Z_bottom + Z_top))
             l_b = np.where(choose_bottom, l_b, m_b)
             h_b = np.where(choose_bottom, m_b, h_b)
         if binning_offset:
-            res_a = l_a + rng.random(size=(num_samples, 1, 1))*(a_k[1]-a_k[0])/2**sample_depth
-            res_b = l_b + rng.random(size=(num_samples, 1, 1))*(b_k[1]-b_k[0])/2**sample_depth
+            res_a = l_a + random_state.random(size=(num_samples, 1, 1))*(a_k[1]-a_k[0])/2**sample_depth
+            res_b = l_b + random_state.random(size=(num_samples, 1, 1))*(b_k[1]-b_k[0])/2**sample_depth
         else:
             res_a = (l_a + h_a)/2
             res_b = (l_b + h_b)/2
