@@ -24,11 +24,10 @@ def fig2():
     nbins = int(dfem.iloc[0]["Zbins"])
     xs = (np.arange(nbins) + 0.5) * dfem.iloc[0]["Zwidth"]
     for _ in range(4):
-        _row = dfem.iloc[_]
         plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-    plt.plot(xs, rwth.avg(11, ene).dldx(xs), c="k",
+    plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
              label=r"1 TeV $e^-$ (RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")

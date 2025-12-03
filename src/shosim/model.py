@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from importlib.resources import files, as_file
-from typing import Callable, Dict, NamedTuple
+from typing import Callable, Dict, NamedTuple, List
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
@@ -9,7 +9,7 @@ from scipy import stats
 from scipy.stats._distn_infrastructure import rv_frozen
 from .media import Medium
 from .pdg import FLUKA2PDG
-from .math import efn, lin, cbc, qrt, BSpline
+from .math import efn, lin, cbc, qrt, a, b, BSpline
 
 
 def ltot_scale(m0: Medium, m1: Medium):
@@ -38,13 +38,10 @@ class ModelBase(ABC):
         pass
 
     @abstractmethod
-    def avg(self, pdg: int, energy: float) -> Shower1D:
-        pass
-
-    @abstractmethod
     def sample(self,
                pdg: int,
-               energy: float) -> Shower1D:
+               energy: float,
+               num_samples: int) -> List[Shower1D]:
         pass
 
 
@@ -131,7 +128,7 @@ class RWParametrization1D(ModelBase):
         """
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
-    def avg(self, pdg: int, energy: float) -> Shower1D:
+    def mean_1d(self, pdg: int, energy: float) -> Shower1D:
         """
         Retrieves the average Shower1D object for a specified
         particle type and energy.
@@ -144,14 +141,14 @@ class RWParametrization1D(ModelBase):
 
         Returns
         -------
-        Shower1D: The average 1D shower profile
-
+        Shower1D: A 1D shower profile using mean(ltot); shape is invariant given energy
         """
         return Shower1D(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
 
     def sample(self,
                pdg: int,
-               energy: float) -> Shower1D:
+               energy: float,
+               num_samples: int=1) -> List[Shower1D]:
         """
         Samples an individual Shower1D object for a specified
         particle type and energy. Only ltot is randomly sampled.
@@ -164,10 +161,9 @@ class RWParametrization1D(ModelBase):
 
         Returns
         -------
-        Shower1D: The sampled 1D shower profile
+        List[Shower1D]: The sampled 1D shower profile
         """
-        return Shower1D(self.ltot_dist(pdg, energy).rvs(random_state=self._rng),
-                        self._shape(pdg, energy))
+        return [Shower1D(_, self._shape(pdg, energy)) for _ in self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._rng)]
 
 
 class Parametrization1D(ModelBase):
@@ -176,34 +172,6 @@ class Parametrization1D(ModelBase):
 
     Based on: TBD
     """
-    @staticmethod
-    def aprime(a: float) -> float:
-        """
-        Function to transform a into range (0,1)
-        """
-        return 1./np.sqrt(a)
-
-    @staticmethod
-    def bprime(b: float) -> float:
-        """
-        Function to transform b into range (0,1)
-        """
-        return 1./(1.+b**2)
-
-    @staticmethod
-    def a(aprime: float) -> float:
-        """
-        Function to transform a' with domain (0,1) back to a
-        """
-        return 1./aprime**2
-
-    @staticmethod
-    def b(bprime: float) -> float:
-        """
-        Function to transform b' with domain (0,1) back to b
-        """
-        return np.sqrt(1./bprime-1.)
-
     @staticmethod
     def load_ltots() -> Dict[int, np.lib.npyio.NpzFile]:
         data = {}
@@ -310,7 +278,7 @@ class Parametrization1D(ModelBase):
         sdist_args[-2] *= self._scale
         return sdist(*sdist_args)
 
-    def avg(self, pdg: int, energy: float) -> Shower1D:
+    def mean_ab(self, pdg: int, energy: float) -> Shower1D:
         """
         Retrieves the average Shower1D object for a specified
         particle type and energy.
@@ -327,17 +295,17 @@ class Parametrization1D(ModelBase):
 
         Note
         ----
-        This is taken as the average shape over parameters a and b, not the
-        average over dl/dx
+        The shape is taken as the average over parameters a and b, which differs
+        from the average over 1/ltot * dl/dx
         """
         bspl = self.THETAS[pdg]
-        a_avg = self.a(bspl.integrate_grid(np.log10(energy), (1, 0)).sum())
-        b_avg = self.b(bspl.integrate_grid(np.log10(energy), (0, 1)).sum())
-        return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a_avg, b_avg))
-
+        ap, bp = bspl.mean(np.log10(energy))
+        return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a(ap), b(bp)))
+    
     def sample(self,
                pdg: int,
-               energy: float) ->Shower1D:
+               energy: float,
+               num_samples: int=1) ->List[Shower1D]:
         """
         Samples an individual Shower1D object for a specified
         particle type and energy.
@@ -350,6 +318,10 @@ class Parametrization1D(ModelBase):
 
         Returns
         -------
-        Shower1D: The sampled 1D shower profile
+        List[Shower1D]: The sampled 1D shower profile
         """
-        pass
+        ltots = self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._rng)
+        bspl = self.THETAS[pdg]
+        aps, bps = bspl.sample_ab(np.log10(energy), num_samples, random_state=self._rng).T
+
+        return [Shower1D(ltot, self._shape(a(ap), b(bp))) for ltot, ap, bp in zip(ltots, aps, bps)]
