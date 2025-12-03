@@ -277,7 +277,8 @@ class BSpline(NamedTuple):
 
         Returns
         -------
-        result: where result[i,j,k] is the integral over the intersection of the i-th a region, j-th b region, and k-th logE region
+        ndarray result where result[i,j,k] is the integral over the intersection of
+        the i-th a region, j-th b region, and k-th logE region
         """
         a_k = self.knots[0]
         b_k = self.knots[1]
@@ -352,22 +353,28 @@ class BSpline(NamedTuple):
                           binning_offset: bool=True,
                           num_quad_nodes: int=7) -> np.ndarray:
         """
-        Samples (a', b') for given log10E via binary search sampling, kept for historical purposes.
+        Samples (a', b') for given log10E via binary split algorithm.
 
         Parameters
         ----------
         logE: log10(logE [GeV])
         num_samples: number of (a', b') samples to draw
         random_state: random_state state, if None initialize from scratch [Default: None]
-        sample_depth: Number of times to divide regions during binary grid sampling. A sample_depth
-                      of n will give a sample precision of of 1/2^n times the size of each spline region
-                      [Default: 10]
-        binning_offset: Determines whether to random offset to reduce binning errors [Default: True]
+        sample_depth: Number of times to divide regions during binary grid sampling.
+                      A sample_depth of n will give a sample precision of of 1/2^n
+                      times the size of each spline region [Default: 10]
+        binning_offset: Determines whether to random offset to reduce binning
+                        errors [Default: True]
         num_quad_nodes: Number of nodes used for gaussian quadrature [Default: 7]
 
         Returns
         -------
         ndarray of sampled np.array([(a', b')_0, ...])
+
+        Notes
+        -----
+        The resulting sample does not seem to exactly match rejection sampling,
+        but is kept for historical purposes.
         """
         if random_state is None:
             random_state = np.random.default_rng(42)
