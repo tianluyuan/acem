@@ -314,19 +314,137 @@ class BSpline(NamedTuple):
     def sample_ab(self,
                   logE: float,
                   num_samples: int,
-                  random_state: None | Generator=None) -> np.ndarray:
-        if random_state is None:
-            random_state = np.random.default_rng(42)
+                  rng: None | Generator=None) -> np.ndarray:
+        """
+        Samples (a', b') for given log10E via rejection sampling
+
+        Parameters
+        ----------
+        logE: log10(logE [GeV])
+        num_samples: number of (a', b') samples to draw
+        rng: rng state
+
+        Returns
+        -------
+        ndarray of sampled np.array([(a', b')_0, ...])
+        """
+        if rng is None:
+            rng = np.random.default_rng(42)
         
         ap, bp = self.mode(logE)
         f_max = self.__call__(ap, bp, logE)
         samples = []
         while len(samples) < num_samples:
-            x_star = random_state.uniform()
-            y_star = random_state.uniform()
-            z_star = random_state.uniform(0., f_max)
+            x_star = rng.uniform()
+            y_star = rng.uniform()
+            z_star = rng.uniform(0., f_max)
 
             if z_star <= self.__call__(x_star, y_star, logE):
                 samples.append((x_star, y_star))
             
         return np.asarray(samples)
+
+    def _legacy_sample_ab(self,
+                          logE: float,
+                          num_samples: int,
+                          rng: None | Generator=None,
+                          sample_depth: int=7,
+                          binning_offset: bool=True,
+                          num_quad_nodes: int=7) -> np.ndarray:
+        """
+        Samples (a', b') for given log10E via binary search sampling, kept for historical purposes.
+        The resulting sample does not seem to match rejection sampling, noticeably in the tails.
+
+        Parameters
+        ----------
+        logE: log10(logE [GeV])
+        num_samples: number of (a', b') samples to draw
+        rng: rng state, if None initialize from scratch [Default: None]
+        sample_depth: Number of times to divide regions during binary grid sampling. A sample_depth
+                      of n will give a sample precision of of 1/2^n times the size of each spline region
+                      [Default: 10]
+        binning_offset: Determines whether to random offset to reduce binning errors [Default: True]
+        num_quad_nodes: Number of nodes used for gaussian quadrature [Default: 7]
+
+        Returns
+        -------
+        ndarray of sampled np.array([(a', b')_0, ...])
+        """
+        if rng is None:
+            rng = np.random.default_rng(42)
+        ## Create nodes and weights for 2d gaussian quadrature
+        nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
+        weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T
+
+        a_k, b_k, E_k = self.knots
+        ## Subrouting to integrate the spline within a specified region
+        def integrate(l_a, h_a, l_b, h_b, Coefs_abE):
+            nodes_ = nodes_1d.reshape(1, num_quad_nodes, 1)
+            nodesT_ = nodes_1d.reshape(1, 1, num_quad_nodes)
+            Z = np.zeros([Coefs_abE.shape[0], num_quad_nodes, num_quad_nodes])
+            for l in range(4):
+                for m in range(4):
+                    Z += Coefs_abE[:, :, :, l, m] * \
+                                np.tile((nodes_*(h_a-l_a)/2 + (l_a+h_a)/2)**l, (1, 1, num_quad_nodes)) * \
+                                np.tile((nodesT_*(h_b-l_b)/2 + (l_b+h_b)/2)**m, (1, num_quad_nodes, 1))
+            return np.sum(np.exp(Z) * weights.reshape(1, num_quad_nodes, num_quad_nodes), axis=(-2, -1), keepdims=True) * (h_a-l_a)*(h_b-l_b)/4
+        E_i = np.searchsorted(E_k[3:-3], logE, side="right")
+        E_i -= (E_i > self.poly_coefs.shape[2])
+        CoefsE = (self.poly_coefs[:, :, E_i-1, :, :, :] * np.array([1, logE, logE**2, logE**3]).reshape(1, 1, 1, 1, 4)).sum(axis = -1)
+
+        ## Generate the indices for the regions by integrating over every region and randomly selecting based on their total probability
+        nodes = np.tile(nodes_1d, (num_quad_nodes, 1))
+        nodes_array = np.tile(nodes.reshape(1, 1, num_quad_nodes, num_quad_nodes), (CoefsE.shape[0], CoefsE.shape[1], 1, 1))
+        nodesT_array = np.tile(nodes.T.reshape(1, 1, num_quad_nodes, num_quad_nodes), (CoefsE.shape[0], CoefsE.shape[1], 1, 1))
+
+        Z = np.zeros((*CoefsE.shape[:2], num_quad_nodes, num_quad_nodes))
+        """
+        Z[grid of regions a][grid of regions b][grid of nodes a][grid of nodes b]
+        """
+        l_a = np.tile(a_k[3:-4].reshape(-1, 1, 1, 1), (1, CoefsE.shape[1], num_quad_nodes, num_quad_nodes))
+        h_a = np.tile(a_k[4:-3].reshape(-1, 1, 1, 1), (1, CoefsE.shape[1], num_quad_nodes, num_quad_nodes))
+        l_b = np.tile(b_k[3:-4].reshape(1, -1, 1, 1), (CoefsE.shape[0], 1, num_quad_nodes, num_quad_nodes))
+        h_b = np.tile(b_k[4:-3].reshape(1, -1, 1, 1), (CoefsE.shape[0], 1, num_quad_nodes, num_quad_nodes))
+
+        for l in range(4):
+            for m in range(4):
+                Z += np.tile(CoefsE[:, :, l, m].reshape(CoefsE.shape[0], CoefsE.shape[1], 1, 1), (1, 1, num_quad_nodes, num_quad_nodes)) \
+                        * (nodes_array*(h_a-l_a)/2 + (l_a+h_a)/2)**l * (nodesT_array*(h_b-l_b)/2 + (l_b+h_b)/2)**m
+        integrated_grid = np.sum(np.exp(Z) * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4, axis=(2, 3))
+
+        ranges = np.insert(integrated_grid.reshape(-1).cumsum(), 0, 0)
+        indices = np.searchsorted(ranges, rng.random(size=num_samples)*ranges[-1]) - 1
+        a_regions = indices // CoefsE.shape[1]
+        b_regions = indices % CoefsE.shape[1]
+
+
+        Coefs_abE = CoefsE[a_regions, b_regions, :, :].reshape(num_samples, 1, 1, 4, 4)
+
+        l_a = np.reshape(a_k[a_regions + 3], (num_samples, 1, 1))
+        h_a = np.reshape(a_k[a_regions + 4], (num_samples, 1, 1))
+        l_b = np.reshape(b_k[b_regions + 3], (num_samples, 1, 1))
+        h_b = np.reshape(b_k[b_regions + 4], (num_samples, 1, 1))
+
+        for _ in range(sample_depth):
+            m_a = (l_a + h_a)/2
+            # Integrate left and right of m_a
+            Z_left = integrate(l_a, m_a, l_b, h_b, Coefs_abE)
+            Z_right = integrate(m_a, h_a, l_b, h_b, Coefs_abE)
+            choose_left = rng.random(size=(num_samples, 1, 1)) < (Z_left / (Z_left + Z_right))
+            l_a = np.where(choose_left, l_a, m_a)
+            h_a = np.where(choose_left, m_a, h_a)
+
+            m_b = (l_b + h_b)/2
+            # Integrate above and bellow
+            Z_bottom = integrate(l_a, h_a, l_b, m_b, Coefs_abE)
+            Z_top = integrate(l_a, h_a, m_b, h_b, Coefs_abE)
+            choose_bottom = rng.random(size=(num_samples, 1, 1)) < (Z_bottom / (Z_bottom + Z_top))
+            l_b = np.where(choose_bottom, l_b, m_b)
+            h_b = np.where(choose_bottom, m_b, h_b)
+        if binning_offset:
+            res_a = l_a + rng.random(size=(num_samples, 1, 1))*(a_k[1]-a_k[0])/2**sample_depth
+            res_b = l_b + rng.random(size=(num_samples, 1, 1))*(b_k[1]-b_k[0])/2**sample_depth
+        else:
+            res_a = (l_a + h_a)/2
+            res_b = (l_b + h_b)/2
+        return np.asarray([res_a.reshape(-1), res_b.reshape(-1)]).T
