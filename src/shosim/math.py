@@ -1,7 +1,9 @@
 from typing import NamedTuple, Self
 import itertools
 import numpy as np
+from numpy.random import Generator
 from scipy import interpolate
+from scipy.optimize import minimize
 
 def efn(en, fn, *args):
     return np.exp(fn(np.log10(en), *args))
@@ -19,6 +21,34 @@ def lin(x, t0, t1):
     return t1 * x + t0
 
 
+def aprime(a: float) -> float:
+    """
+    Function to transform a into range (0,1)
+    """
+    return 1./np.sqrt(a)
+
+
+def bprime(b: float) -> float:
+    """
+    Function to transform b into range (0,1)
+    """
+    return 1./(1.+b**2)
+
+
+def a(aprime: float) -> float:
+    """
+    Function to transform a' with domain (0,1) back to a
+    """
+    return 1./aprime**2
+
+
+def b(bprime: float) -> float:
+    """
+    Function to transform b' with domain (0,1) back to b
+    """
+    return np.sqrt(1./bprime-1.)
+
+
 class BSpline(NamedTuple):
     """
     instantiate with create factory
@@ -28,16 +58,27 @@ class BSpline(NamedTuple):
     poly_coefs: np.ndarray
 
     @classmethod
-    def create(cls, coefs: np.ndarray) -> Self:
+    def create(cls, coefs: np.ndarray, **kwargs) -> Self:
         """
-        BSpline coefs: Array with shape (c_a,c_b,c_E) of coefficients for a basis spline and its knots
-        knots: tuple (a_k,b_k,E_k) where each element is the 1d array of the knots defining the spline regions along each dimension
+        Given coefs, constructs its knots, a tuple (a_k,b_k,E_k)
+        where each element is the 1d array of the knots defining the
+        spline regions along each dimension.
 
-        Additionally converts basis spline coefficients into polynomial coefficients and stores them
-        poly_coefs - Array with shape (c_a-3, c_b-3, c_E-3, 4, 4, 4) . 
+        Additionally converts basis spline coefficients into polynomial
+        coefficients and stores them in poly_coefs.
+        poly_coefs: Array with shape (c_a-3, c_b-3, c_E-3, 4, 4, 4) . 
         poly_coefs[i,j,k,q,r,s] is the coeficient on the a**q b**r logE**s term in the space right after knot a_k[i+3], b_k[j+3], and E_k[k+3]
+
+        Parameters
+        ----------
+        BSpline coefs: Array with shape (c_a,c_b,c_E) of coefficients for a basis spline and its knots
+
+        Returns
+        -------
+        BSpline object for coefs with corresponding knots and poly_coefs
+
         """
-        knots = cls._make_knots(*coefs.shape)
+        knots = cls._make_knots(*coefs.shape, **kwargs)
         assert np.all(np.asarray([len(_) for _ in knots]) == np.asarray([_ + 4 for _ in coefs.shape]))
         a_k = knots[0]
         b_k = knots[1]
@@ -88,21 +129,25 @@ class BSpline(NamedTuple):
         """
         Makes the knots for the given Coefficients
         Provided a range of valid values for each of the three parameters
-        Params:
-            a_reg - number of valid regions in the a dimension
-            b_reg - number of valid regions in the b dimension
-            c_E - number of valid regions in the logE dimension
-            a_min - minumum value in the a dimension, [Default = 0]
-            a_max - maximum value in the a dimension, [Default = 1]
-            b_min - minumum value in the b dimension, [Default = 0]
-            b_max - maximum value in the b dimension, [Default = 1]
-            E_min - minumum value in the logE dimension, [Default = 1]
-            E_max - maximum value in the logE dimension, [Default = 6]
-                    Note that returned knot values will extend past these values for b-spline fitting purposes
-        Return:
-            a_k - 1d array of knots for the a dimension
-            b_k - 1d array of knots for the b dimension
-            E_k - 1d array of knots for the logE dimension
+
+        Parameters
+        ----------
+        a_reg: number of valid regions in the a dimension
+        b_reg: number of valid regions in the b dimension
+        c_E: number of valid regions in the logE dimension
+        a_min: minumum value in the a dimension, [Default = 0]
+        a_max: maximum value in the a dimension, [Default = 1]
+        b_min: minumum value in the b dimension, [Default = 0]
+        b_max: maximum value in the b dimension, [Default = 1]
+        E_min: minumum value in the logE dimension, [Default = 1]
+        E_max: maximum value in the logE dimension, [Default = 6]
+
+        Note that returned knot values will extend past these values for b-spline fitting purposes
+        Returns
+        -------
+        a_k: 1d array of knots for the a dimension
+        b_k: 1d array of knots for the b dimension
+        E_k: 1d array of knots for the logE dimension
         """
         ## Define the knots
         a_k = np.linspace(a_min,a_max,c_a - 3 + 1)
@@ -123,12 +168,16 @@ class BSpline(NamedTuple):
     ) -> np.ndarray | None:
         """
         constructs the coefficients for a 3rd order BSpline with evenly space knots in the polynomial basis
-        Params:
-        piece_num - which of the four sections of the BSpline basis element (integer 0 (leftmost) to 3 (rightmost))
-        x_0 - leftmost knot position
-        D - distance between knots
-        n - index of basis spline (0 corresponds to basis element originating from x_0)
-        Returns:
+
+        Parameters
+        ----------
+        piece_num: which of the four sections of the BSpline basis element (integer 0 (leftmost) to 3 (rightmost))
+        x_0: leftmost knot position
+        D: distance between knots
+        n: index of basis spline (0 corresponds to basis element originating from x_0)
+
+        Returns
+        -------
         coefs: coefs[i] is the coefficient on the x**i term in the specified section of the basis element
         """
         match piece_num:
@@ -147,14 +196,88 @@ class BSpline(NamedTuple):
                                 -3*D**2*n**2 - 24*D**2*n - 48*D**2 - 6*D*n*x_0 - 24*D*x_0 - 3*x_0**2,
                                 3*D*n + 12*D + 3*x_0,-1])/(6*D**3)
 
-    def integrate_grid(self,logE,moment=(0,0),num_quad_nodes=7):
+    def __repr__(self):
+        repr_content = (
+            f"coefs={self.coefs}, "
+            f"knots='{self.knots}'"
+        )
+        
+        return f"{type(self).__name__}({repr_content})"
+
+    def __call__(self, a: float, b: float, logE: float) -> float:
         """
-        Integrate each region of the spline at a specified energy and return a grid of the integral in each region
-        Params:
-        logE: log10(E [GeV])
+        Parameters
+        ----------
+        a: first parameter for gamma distribution, transformed to lie on [0, 1]
+        b: second parameter for gamma distribution, transformed to lie on [0, 1]
+        logE: primary particle energy in log10(logE [GeV])
+
+        Returns
+        -------
+        float: Result of evaluating BSpline at the provided a,b,logE values
+        """
+        ## if knots aren't specified generate them from default values
+        a_k = self.knots[0]
+        b_k = self.knots[1]
+        E_k = self.knots[2]
+        a_i = np.searchsorted(a_k[3:-3], a, side='right')
+        b_i = np.searchsorted(b_k[3:-3], b, side='right')
+        E_i = np.searchsorted(E_k[3:-3], logE, side='right')
+
+        a_i -= (a_i > self.poly_coefs.shape[0]) # so that things don't break at the upper boundaries
+        b_i -= (b_i > self.poly_coefs.shape[1])
+        E_i -= (E_i > self.poly_coefs.shape[2])
+        Z = 0.
+        for l in range(4):
+            for m in range(4):
+                for n in range(4):
+                    Z += self.poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
+        return Z
+
+    def mean(self, logE: float) -> tuple[float, float]:
+        """
+        Parameters
+        ----------
+        logE: primary particle energy in log10(logE [GeV])
+
+        Returns
+        -------
+        tuple[float, float]: mean(a', b') for given logE
+        """
+        return self.integrate_grid(logE, (1, 0)).sum(), self.integrate_grid(logE, (0, 1)).sum()
+    
+    def mode(self, logE: float):
+        """
+        Parameters
+        ----------
+        logE: primary particle energy in log10(logE [GeV])
+
+        Returns
+        -------
+        tuple[float, float]: mode(a', b') for given logE
+        """
+        alpha, beta = self.mean(logE)
+
+        mini = minimize(lambda x: -self.__call__(x[0], x[1], logE), [alpha, beta],
+                        method='Nelder-Mead', bounds=[(0., 1.), (0., 1.)])
+        return mini.x[0], mini.x[1]
+            
+    def integrate_grid(self,
+                       logE: float,
+                       moment: tuple[int, int]=(0,0),
+                       num_quad_nodes: int=7) -> np.ndarray:
+        """
+        Integrate each region of the spline at a specified energy
+        and return a grid of the integral in each region
+
+        Parameters
+        ----------
+        logE: log10(logE [GeV])
         num_quad_nodes: number of nodes used for guassian quadrature, [Default = 7]
-        Returns:
-        result[i,j,k] is the integral over the intersection of the i-th a region, j-th b region, and k-th logE region
+
+        Returns
+        -------
+        result: where result[i,j,k] is the integral over the intersection of the i-th a region, j-th b region, and k-th logE region
         """
         a_k = self.knots[0]
         b_k = self.knots[1]
@@ -188,27 +311,25 @@ class BSpline(NamedTuple):
         moment_kernel = (X_quad**alpha) * (Y_quad**beta)
         return np.sum(np.exp(Z) * moment_kernel * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4,axis=(2,3))
             
-    def __call__(self, a, b, logE):
-        """
-        Params:
-            a,b,logE - input parameter values where a and b are the primed coordinates and logE is log10(E [GeV])
-        Returns:
-            Result of evaluating BSpline at the provided a,b,logE values
-        """
-        ## if knots aren't specified generate them from default values
-        a_k = self.knots[0]
-        b_k = self.knots[1]
-        E_k = self.knots[2]
-        a_i = np.searchsorted(a_k[3:-3], a, side='right')
-        b_i = np.searchsorted(b_k[3:-3], b, side='right')
-        E_i = np.searchsorted(E_k[3:-3], logE, side='right')
+    def sample_ab(self,
+                  logE: float,
+                  num_samples: int,
+                  random_state: None | Generator=None) -> np.ndarray:
+        if random_state is None:
+            random_state = np.random.default_rng(42)
+        Xmin, Xmax = [0., 1.]
+        Ymin, Ymax = [0., 1.]
+        
+        samples = []
 
-        a_i -= (a_i > self.poly_coefs.shape[0]) # so that things don't break at the upper boundaries
-        b_i -= (b_i > self.poly_coefs.shape[1])
-        E_i -= (E_i > self.poly_coefs.shape[2])
-        Z = 0
-        for l in range(4):
-            for m in range(4):
-                for n in range(4):
-                    Z += self.poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
-        return Z
+        ap, bp = self.mode(logE)
+        f_max = self.__call__(ap, bp, logE)
+        while len(samples) < num_samples:
+            x_star = random_state.uniform(Xmin, Xmax)
+            y_star = random_state.uniform(Ymin, Ymax)
+            z_star = random_state.uniform(0., f_max)
+
+            if z_star <= self.__call__(x_star, y_star, logE):
+                samples.append((x_star, y_star))
+            
+        return np.asarray(samples)
