@@ -52,7 +52,7 @@ if __name__=='__main__':
     plt.show()
 
     for pdg, B in curr.THETAS.items():
-        bsp = sp.interpolate.NdBSpline(B.knots, B.coefs, 3)
+        bsp = sp.interpolate.NdBSpline(B.bspl.t, B.bspl.c, 3)
 
         Z0 = B(X, Y, logE)
         Z1 = bsp(np.asarray([X, Y, np.ones_like(X)*logE]).T).T
@@ -78,7 +78,7 @@ if __name__=='__main__':
         ap = np.arange(0., 1., 0.001)
         plt.figure()
         plt.plot(ap, B(ap, 0.3, logE))
-        [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.knots[0]]
+        [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.bspl.t[0]]
         plt.xlabel("a'")
         plt.ylabel('spline value')
         plt.title(f"{pdg}")
@@ -86,7 +86,7 @@ if __name__=='__main__':
         bp = np.arange(0., 1., 0.001)
         plt.figure()
         plt.plot(bp, B(0.3, bp, logE))
-        [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.knots[1]]
+        [plt.axvline(_, linestyle='--', linewidth=0.5) for _ in B.bspl.t[1]]
         plt.ylabel("b'")
         plt.ylabel('spline value')
         plt.title(f"{pdg}")

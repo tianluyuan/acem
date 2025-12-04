@@ -1,6 +1,7 @@
 from typing import NamedTuple, Self
 import itertools
 import numpy as np
+import numpy.typing as npt
 from numpy.random import Generator
 from scipy import interpolate
 from scipy.optimize import minimize
@@ -53,9 +54,8 @@ class BSpline(NamedTuple):
     """
     instantiate with create factory
     """
-    coefs: np.ndarray
-    knots: tuple[np.ndarray, np.ndarray, np.ndarray]
     poly_coefs: np.ndarray
+    bspl: interpolate.NdBSpline
 
     @classmethod
     def create(cls, coefs: np.ndarray, **kwargs) -> Self:
@@ -109,9 +109,8 @@ class BSpline(NamedTuple):
                 * np.tile(BSplinePieces_E[n:poly_coefs.shape[2]+n,3-n,s].reshape((1,1,poly_coefs.shape[2])),(poly_coefs.shape[0],poly_coefs.shape[1],1))
 
         return cls(
-            coefs=coefs,
-            knots=knots,
-            poly_coefs=poly_coefs
+            poly_coefs=poly_coefs,
+            bspl=interpolate.NdBSpline(knots, coefs, 3)
         )
 
     @staticmethod
@@ -196,15 +195,10 @@ class BSpline(NamedTuple):
                                 -3*D**2*n**2 - 24*D**2*n - 48*D**2 - 6*D*n*x_0 - 24*D*x_0 - 3*x_0**2,
                                 3*D*n + 12*D + 3*x_0,-1])/(6*D**3)
 
-    def __repr__(self):
-        repr_content = (
-            f"coefs={self.coefs}, "
-            f"knots='{self.knots}'"
-        )
-        
-        return f"{type(self).__name__}({repr_content})"
-
-    def __call__(self, a: float, b: float, logE: float) -> float:
+    def __call__(self,
+                 a: float | npt.ArrayLike,
+                 b: float | npt.ArrayLike,
+                 logE: float | npt.ArrayLike) -> float:
         """
         Parameters
         ----------
@@ -214,25 +208,10 @@ class BSpline(NamedTuple):
 
         Returns
         -------
-        float: Result of evaluating BSpline at the provided a,b,logE values
+        ndarray: Result of evaluating BSpline at the provided a,b,logE values
         """
-        ## if knots aren't specified generate them from default values
-        a_k = self.knots[0]
-        b_k = self.knots[1]
-        E_k = self.knots[2]
-        a_i = np.searchsorted(a_k[3:-3], a, side='right')
-        b_i = np.searchsorted(b_k[3:-3], b, side='right')
-        E_i = np.searchsorted(E_k[3:-3], logE, side='right')
-
-        a_i -= (a_i > self.poly_coefs.shape[0]) # so that things don't break at the upper boundaries
-        b_i -= (b_i > self.poly_coefs.shape[1])
-        E_i -= (E_i > self.poly_coefs.shape[2])
-        Z = 0.
-        for l in range(4):
-            for m in range(4):
-                for n in range(4):
-                    Z += self.poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
-        return Z
+        A, B, LogE = np.broadcast_arrays(a, b, logE)
+        return self.bspl(np.asarray([A, B, LogE]).T).T
 
     def mean(self, logE: float) -> tuple[float, float]:
         """
@@ -256,9 +235,7 @@ class BSpline(NamedTuple):
         -------
         tuple[float, float]: mode(a', b') for given logE
         """
-        alpha, beta = self.mean(logE)
-
-        mini = minimize(lambda x: -self.__call__(x[0], x[1], logE), [alpha, beta],
+        mini = minimize(lambda x: -self.bspl((x[0], x[1], logE)), [0.5, 0.5],
                         method='Nelder-Mead', bounds=[(0., 1.), (0., 1.)])
         if not mini.success:
             raise RuntimeError(f"Minimization failure in mode search; {mini.message}")
@@ -282,9 +259,7 @@ class BSpline(NamedTuple):
         ndarray result where result[i,j,k] is the integral over the intersection of
         the i-th a region, j-th b region, and k-th logE region
         """
-        a_k = self.knots[0]
-        b_k = self.knots[1]
-        E_k = self.knots[2]
+        a_k, b_k, E_k = self.bspl.t
 
         ## create nodes for gaussian quadrature
         nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
@@ -384,7 +359,7 @@ class BSpline(NamedTuple):
         nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
         weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T
 
-        a_k, b_k, E_k = self.knots
+        a_k, b_k, E_k = self.bspl.t
         ## Subrouting to integrate the spline within a specified region
         def integrate(l_a, h_a, l_b, h_b, Coefs_abE):
             nodes_ = nodes_1d.reshape(1, num_quad_nodes, 1)
