@@ -260,6 +260,8 @@ class BSpline(NamedTuple):
 
         mini = minimize(lambda x: -self.__call__(x[0], x[1], logE), [alpha, beta],
                         method='Nelder-Mead', bounds=[(0., 1.), (0., 1.)])
+        if not mini.success:
+            raise RuntimeError(f"Minimization failure in mode search; {mini.message}")
         return mini.x[0], mini.x[1]
             
     def integrate_grid(self,
