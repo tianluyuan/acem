@@ -22,28 +22,28 @@ def lin(x, t0, t1):
     return t1 * x + t0
 
 
-def aprime(a: float) -> float:
+def aprime(a):
     """
     Function to transform a into range (0,1)
     """
     return 1./np.sqrt(a)
 
 
-def bprime(b: float) -> float:
+def bprime(b):
     """
     Function to transform b into range (0,1)
     """
     return 1./(1.+b**2)
 
 
-def a(aprime: float) -> float:
+def a(aprime):
     """
     Function to transform a' with domain (0,1) back to a
     """
     return 1./aprime**2
 
 
-def b(bprime: float) -> float:
+def b(bprime):
     """
     Function to transform b' with domain (0,1) back to b
     """
@@ -58,11 +58,11 @@ class BSpline(NamedTuple):
     bspl: interpolate.NdBSpline
 
     @classmethod
-    def create(cls, coefs: np.ndarray, **kwargs) -> Self:
+    def create(cls,
+               knots: tuple[np.ndarray, np.ndarray, np.ndarray],
+               coefs: np.ndarray) -> Self:
         """
-        Given coefs, constructs its knots, a tuple (a_k,b_k,E_k)
-        where each element is the 1d array of the knots defining the
-        spline regions along each dimension.
+        Given 3D knots and associated coefs, instantiates a BSpline object
 
         Additionally converts basis spline coefficients into polynomial
         coefficients and stores them in poly_coefs.
@@ -71,14 +71,15 @@ class BSpline(NamedTuple):
 
         Parameters
         ----------
-        BSpline coefs: Array with shape (c_a,c_b,c_E) of coefficients for a basis spline and its knots
+        knots: a 3-element tuple (a_k,b_k,E_k) where each element is the 1d array
+               of the knots defining the spline regions along each dimension
+        coefs: Array with shape (c_a,c_b,c_E) of coefficients for a basis spline and its knots
 
         Returns
         -------
         BSpline object for coefs with corresponding knots and poly_coefs
 
         """
-        knots = cls._make_knots(*coefs.shape, **kwargs)
         assert np.all(np.asarray([len(_) for _ in knots]) == np.asarray([_ + 4 for _ in coefs.shape]))
         a_k = knots[0]
         b_k = knots[1]
@@ -196,21 +197,21 @@ class BSpline(NamedTuple):
                                 3*D*n + 12*D + 3*x_0,-1])/(6*D**3)
 
     def __call__(self,
-                 a: float | npt.ArrayLike,
-                 b: float | npt.ArrayLike,
+                 aprime: float | npt.ArrayLike,
+                 bprime: float | npt.ArrayLike,
                  logE: float | npt.ArrayLike) -> float:
         """
         Parameters
         ----------
-        a: first parameter for gamma distribution, a', transformed to lie on [0, 1]
-        b: second parameter for gamma distribution, b', transformed to lie on [0, 1]
+        aprime: first parameter for gamma distribution, a', transformed to lie on [0, 1]
+        bprime: second parameter for gamma distribution, b', transformed to lie on [0, 1]
         logE: primary particle energy in log10(logE [GeV])
 
         Returns
         -------
         ndarray: Result of evaluating BSpline at the provided a,b,logE values
         """
-        A, B, LogE = np.broadcast_arrays(a, b, logE)
+        A, B, LogE = np.broadcast_arrays(aprime, bprime, logE)
         return self.bspl(np.asarray([A, B, LogE]).T).T
 
     def mean(self, logE: float) -> tuple[float, float]:
@@ -289,10 +290,10 @@ class BSpline(NamedTuple):
         moment_kernel = (X_quad**alpha) * (Y_quad**beta)
         return np.sum(np.exp(Z) * moment_kernel * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4,axis=(2,3))
             
-    def sample_ab(self,
-                  logE: float,
-                  size: None | int=None,
-                  random_state: None | Generator=None) -> tuple | np.ndarray:
+    def sample(self,
+               logE: float,
+               size: None | int=None,
+               random_state: None | Generator=None) -> tuple | np.ndarray:
         """
         Samples (a', b') for given log10E via rejection sampling
 
@@ -322,13 +323,13 @@ class BSpline(NamedTuple):
             
         return samples[0] if size is None else np.asarray(samples)
 
-    def _legacy_sample_ab(self,
-                          logE: float,
-                          size: None | int=None,
-                          random_state: None | Generator=None,
-                          sample_depth: int=7,
-                          binning_offset: bool=True,
-                          num_quad_nodes: int=7) -> tuple | np.ndarray:
+    def _legacy_sample(self,
+                       logE: float,
+                       size: None | int=None,
+                       random_state: None | Generator=None,
+                       sample_depth: int=7,
+                       binning_offset: bool=True,
+                       num_quad_nodes: int=7) -> tuple | np.ndarray:
         """
         Samples (a', b') for given log10E via binary split algorithm.
 
