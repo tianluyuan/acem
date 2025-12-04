@@ -114,51 +114,6 @@ class BSpline(NamedTuple):
         )
 
     @staticmethod
-    def _make_knots(
-            c_a: int,
-            c_b: int,
-            c_E: int,
-            a_min: float = 0.0,
-            a_max: float = 1.0,
-            b_min: float = 0.0,
-            b_max: float = 1.0,
-            E_min: float = 1.0,
-            E_max: float = 6.0
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Makes the knots for the given Coefficients
-        Provided a range of valid values for each of the three parameters
-
-        Parameters
-        ----------
-        a_reg: number of valid regions in the a dimension
-        b_reg: number of valid regions in the b dimension
-        c_E: number of valid regions in the logE dimension
-        a_min: minumum value in the a dimension, [Default = 0]
-        a_max: maximum value in the a dimension, [Default = 1]
-        b_min: minumum value in the b dimension, [Default = 0]
-        b_max: maximum value in the b dimension, [Default = 1]
-        E_min: minumum value in the logE dimension, [Default = 1]
-        E_max: maximum value in the logE dimension, [Default = 6]
-
-        Note that returned knot values will extend past these values for b-spline fitting purposes
-        Returns
-        -------
-        a_k: 1d array of knots for the a dimension
-        b_k: 1d array of knots for the b dimension
-        E_k: 1d array of knots for the logE dimension
-        """
-        ## Define the knots
-        a_k = np.linspace(a_min,a_max,c_a - 3 + 1)
-        b_k = np.linspace(b_min,b_max,c_b - 3 + 1)
-        E_k = np.linspace(E_min,E_max,c_E - 3 + 1)
-        ## add knot values on above and below the range of interest
-        a_k = interpolate.interp1d(np.arange(c_a - 3 + 1),a_k,bounds_error=False,fill_value="extrapolate")(np.arange(-3,c_a + 1))
-        b_k = interpolate.interp1d(np.arange(c_b - 3 + 1),b_k,bounds_error=False,fill_value="extrapolate")(np.arange(-3,c_b + 1))
-        E_k = interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill_value="extrapolate")(np.arange(-3,c_E + 1))
-        return a_k,b_k,E_k
-
-    @staticmethod
     def _BSplinePiece(
             piece_num: int,
             x_0: float,
