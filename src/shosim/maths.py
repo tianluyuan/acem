@@ -59,8 +59,9 @@ class BSpline(NamedTuple):
 
     @classmethod
     def create(cls,
-               knots: tuple[np.ndarray, np.ndarray, np.ndarray],
-               coefs: np.ndarray) -> Self:
+               t: tuple[np.ndarray, np.ndarray, np.ndarray],
+               c: np.ndarray,
+               k: int | tuple[int, int, int]) -> Self:
         """
         Given 3D knots and associated coefs, instantiates a BSpline object
 
@@ -80,38 +81,36 @@ class BSpline(NamedTuple):
         BSpline object for coefs with corresponding knots and poly_coefs
 
         """
-        assert np.all(np.asarray([len(_) for _ in knots]) == np.asarray([_ + 4 for _ in coefs.shape]))
-        a_k = knots[0]
-        b_k = knots[1]
-        E_k = knots[2]
+        assert np.all(np.asarray([len(_) for _ in t]) == np.asarray([_ + 4 for _ in c.shape]))
+        a_k, b_k, E_k = t
 
         D_a = a_k[1] - a_k[0]
         D_b = b_k[1] - b_k[0]
         D_E = E_k[1] - E_k[0]
-        poly_coefs = np.zeros((coefs.shape[0] - 3,coefs.shape[1] - 3,coefs.shape[2] - 3,4,4,4))
-        BSplinePieces_a = np.zeros((coefs.shape[0],4,4))
-        BSplinePieces_b = np.zeros((coefs.shape[1],4,4))
-        BSplinePieces_E = np.zeros((coefs.shape[2],4,4))
+        poly_coefs = np.zeros((c.shape[0] - 3,c.shape[1] - 3,c.shape[2] - 3,4,4,4))
+        BSplinePieces_a = np.zeros((c.shape[0],4,4))
+        BSplinePieces_b = np.zeros((c.shape[1],4,4))
+        BSplinePieces_E = np.zeros((c.shape[2],4,4))
 
         # BSplinePieces_?[i,j,k] holds the coefficient on the x**k term of the j-th piece of the i-th basis spline
-        for i in range(coefs.shape[0]):
+        for i in range(c.shape[0]):
             for j in range(4):
                 BSplinePieces_a[i,j,:] = cls._BSplinePiece(j,a_k[0],D_a,i)
-        for i in range(coefs.shape[1]):
+        for i in range(c.shape[1]):
             for j in range(4):
                 BSplinePieces_b[i,j,:] = cls._BSplinePiece(j,b_k[0],D_b,i)
-        for i in range(coefs.shape[2]):
+        for i in range(c.shape[2]):
             for j in range(4):
                 BSplinePieces_E[i,j,:] = cls._BSplinePiece(j,E_k[0],D_E,i)
         for q, r, s, l, m, n in itertools.product(*[range(4)]*6):
-            poly_coefs[:,:,:,q,r,s] += coefs[l:poly_coefs.shape[0]+l,m:poly_coefs.shape[1]+m,n:poly_coefs.shape[2]+n] \
+            poly_coefs[:,:,:,q,r,s] += c[l:poly_coefs.shape[0]+l,m:poly_coefs.shape[1]+m,n:poly_coefs.shape[2]+n] \
                 * np.tile(BSplinePieces_a[l:poly_coefs.shape[0]+l,3-l,q].reshape((poly_coefs.shape[0],1,1)),(1,poly_coefs.shape[1],poly_coefs.shape[2])) \
                 * np.tile(BSplinePieces_b[m:poly_coefs.shape[1]+m,3-m,r].reshape((1,poly_coefs.shape[1],1)),(poly_coefs.shape[0],1,poly_coefs.shape[2])) \
                 * np.tile(BSplinePieces_E[n:poly_coefs.shape[2]+n,3-n,s].reshape((1,1,poly_coefs.shape[2])),(poly_coefs.shape[0],poly_coefs.shape[1],1))
 
         return cls(
             poly_coefs=poly_coefs,
-            bspl=interpolate.NdBSpline(knots, coefs, 3)
+            bspl=interpolate.NdBSpline(t, c, k)
         )
 
     @staticmethod

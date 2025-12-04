@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import scipy as sc
 import matplotlib.pyplot as plt
@@ -22,13 +23,14 @@ c_E = 8 # Number of basis splines along E-dimension
 n_a = 450 # Number of histogram bins along a-dimension
 n_b = 450 # Number of histogram bins along b-dimension
 n_E = len(log_ens) # Number of energy levels used for fitting
+deg = 3 # degree of the BSpline
 
 ## Define the knots
 ab_min = 0
 ab_max = 1
-a_k = np.linspace(ab_min,ab_max,c_a - 3 + 1)
-b_k = np.linspace(ab_min,ab_max,c_b - 3 + 1)
-E_k = np.linspace(log_ens[0],log_ens[-1],c_E - 3 + 1)
+a_k = np.linspace(ab_min,ab_max,c_a - deg + 1)
+b_k = np.linspace(ab_min,ab_max,c_b - deg + 1)
+E_k = np.linspace(log_ens[0],log_ens[-1],c_E - deg + 1)
 
 ga = maths.aprime # Function to transform a values into range (0,1)
 gb = maths.bprime # Function to transform a values into range (0,1)
@@ -40,9 +42,9 @@ test_sample_size = 4301 # Number of elements in the testing data set
 theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
 
 ## add knot values on above and below the range of interest
-a_k = sc.interpolate.interp1d(np.arange(c_a - 3 + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_a + 1))
-b_k = sc.interpolate.interp1d(np.arange(c_b - 3 + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_b + 1))
-E_k = sc.interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_E + 1))
+a_k = sc.interpolate.interp1d(np.arange(c_a - deg + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_a + 1))
+b_k = sc.interpolate.interp1d(np.arange(c_b - deg + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_b + 1))
+E_k = sc.interpolate.interp1d(np.arange(c_E - deg + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_E + 1))
 knots = (a_k, b_k, E_k)
 
 
@@ -61,7 +63,7 @@ Returns:
 '''
 def likelihood_test(a_sample,b_sample,E,BSpl):
     ## If knots aren't specified, generate them from default values
-    norm_factor = BSpl.integrate_grid(BSpl.poly_coefs,E,BSpl.bspl.t).sum()
+    norm_factor = BSpl.integrate_grid(E).sum()
     # print('... normalization:', norm_factor)
     return BSpl(a_sample,b_sample,E).sum() - (np.size(a_sample) * np.log(norm_factor))
 
@@ -115,15 +117,15 @@ if __name__ == '__main__':
         B_E = np.zeros((n_E,c_E))
         for i in range(n_a):
             for j in range(c_a):
-                B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + 3 + 2],extrapolate = False)(x_a[i])
+                B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + deg + 1],extrapolate = False)(x_a[i])
                 if np.isnan(B_a[i,j]) : B_a[i,j] = 0
         for i in range(n_b):
             for j in range(c_b):
-                B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + 3 + 2],extrapolate = False)(x_b[i])
+                B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + deg + 1],extrapolate = False)(x_b[i])
                 if np.isnan(B_b[i,j]) : B_b[i,j] = 0
         for i in range(n_E):
             for j in range(c_E):
-                B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + 3 + 2],extrapolate = False)(x_E[i])
+                B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + deg + 1],extrapolate = False)(x_E[i])
                 if np.isnan(B_E[i,j]) : B_E[i,j] = 0
         B_a_pinv = np.linalg.pinv(B_a)
         B_b_pinv = np.linalg.pinv(B_b)
@@ -219,7 +221,8 @@ if __name__ == '__main__':
             print(f'        Convergence / Niterations: {res[1]:}')
             print(f'        Min / max theta: {theta.min()}, {theta.max()}')
             Bspl = maths.BSpline.create(knots,
-                                        theta.reshape((c_a,c_b,c_E)) - coeff_shift)
+                                        theta.reshape((c_a,c_b,c_E)) - coeff_shift,
+                                        deg)
             if perform_likelihood_test:
                 print('    Performing likelihood test...')
                 lls = [likelihood_test(test_sample[:,0,i],test_sample[:,1,i],log_ens[i],Bspl) for i in range(n_E)]
@@ -233,10 +236,13 @@ if __name__ == '__main__':
                 # np.save(output_file, Bspl.poly_coefs)
                 outf = files("shosim") / "resources" / "theta" / f"{particle}.npz"
                 with as_file(outf) as fpath:
+                    # this notation is to match the NdBSpline
                     np.savez(fpath,
-                             t=knots,
+                             t0=knots[0],
+                             t1=knots[1],
+                             t2=knots[2],
                              c=theta.reshape((c_a,c_b,c_E)) - coeff_shift,
-                             k=)
+                             k=deg)
 
             if np.max(np.abs(delta)) < 1e-6:
                 break

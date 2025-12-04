@@ -195,7 +195,10 @@ class Parametrization1D(ModelBase):
                 continue
             with as_file(entry) as fpath:
                 theta = np.load(fpath)
-                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta)
+                c = theta["c"]
+                t = tuple(theta[f"t{_}"] for _ in range(c.ndim))
+                k = theta["k"]
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(t, c, k)
         return data
 
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
@@ -330,7 +333,7 @@ class Parametrization1D(ModelBase):
         _size = 1 if size is None else size
         ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
         bspl = self.THETAS[pdg]
-        aps, bps = bspl.sample_ab(np.log10(energy), _size, random_state=self._rng).T
+        aps, bps = bspl.sample(np.log10(energy), _size, random_state=self._rng).T
 
         _samp = [Shower1D(ltot, self._shape(a(ap), b(bp)))
                  for ltot, ap, bp in zip(ltots, aps, bps)]
