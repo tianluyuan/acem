@@ -48,7 +48,6 @@ E_k = sc.interpolate.interp1d(np.arange(c_E - deg + 1),E_k,bounds_error=False,fi
 knots = (a_k, b_k, E_k)
 
 
-
 '''
 perform a likelihood_test on the provided sample using the given Coefs
 Params:
@@ -117,15 +116,15 @@ if __name__ == '__main__':
         B_E = np.zeros((n_E,c_E))
         for i in range(n_a):
             for j in range(c_a):
-                B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + deg + 1],extrapolate = False)(x_a[i])
+                B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + deg + 2],extrapolate = False)(x_a[i])
                 if np.isnan(B_a[i,j]) : B_a[i,j] = 0
         for i in range(n_b):
             for j in range(c_b):
-                B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + deg + 1],extrapolate = False)(x_b[i])
+                B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + deg + 2],extrapolate = False)(x_b[i])
                 if np.isnan(B_b[i,j]) : B_b[i,j] = 0
         for i in range(n_E):
             for j in range(c_E):
-                B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + deg + 1],extrapolate = False)(x_E[i])
+                B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + deg + 2],extrapolate = False)(x_E[i])
                 if np.isnan(B_E[i,j]) : B_E[i,j] = 0
         B_a_pinv = np.linalg.pinv(B_a)
         B_b_pinv = np.linalg.pinv(B_b)
