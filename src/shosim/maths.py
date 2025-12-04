@@ -50,7 +50,7 @@ def b(bprime):
     return np.sqrt(1./bprime-1.)
 
 
-class BSpline(NamedTuple):
+class BSpline3D(NamedTuple):
     """
     instantiate with create factory
     """
@@ -63,7 +63,7 @@ class BSpline(NamedTuple):
                c: np.ndarray,
                k: int | tuple[int, int, int]) -> Self:
         """
-        Given 3D knots and associated coefs, instantiates a BSpline object
+        Given 3D knots and associated coefs, instantiates a BSpline3D object
 
         Additionally converts basis spline coefficients into polynomial
         coefficients and stores them in poly_coefs.
@@ -72,16 +72,16 @@ class BSpline(NamedTuple):
 
         Parameters
         ----------
-        knots: a 3-element tuple (a_k,b_k,E_k) where each element is the 1d array
-               of the knots defining the spline regions along each dimension
-        coefs: Array with shape (c_a,c_b,c_E) of coefficients for a basis spline and its knots
+        t: a 3-element tuple (a_k,b_k,E_k) where each element is the 1d array
+           of the knots defining the spline regions along each dimension
+        c: Array with shape (c_a,c_b,c_E) of coefficients for the 3D basis spline
+        k: the degree of the basis splines, if int it will be assumed for all dimensions
 
         Returns
         -------
-        BSpline object for coefs with corresponding knots and poly_coefs
+        BSpline3D object
 
         """
-        assert np.all(np.asarray([len(_) for _ in t]) == np.asarray([_ + 4 for _ in c.shape]))
         a_k, b_k, E_k = t
 
         D_a = a_k[1] - a_k[0]

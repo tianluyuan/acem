@@ -219,9 +219,9 @@ if __name__ == '__main__':
             # print(f'        Least squares R^2: {res[3]:5.3e}')
             print(f'        Convergence / Niterations: {res[1]:}')
             print(f'        Min / max theta: {theta.min()}, {theta.max()}')
-            Bspl = maths.BSpline.create(knots,
-                                        theta.reshape((c_a,c_b,c_E)) - coeff_shift,
-                                        deg)
+            Bspl = maths.BSpline3D.create(knots,
+                                          theta.reshape((c_a,c_b,c_E)) - coeff_shift,
+                                          deg)
             if perform_likelihood_test:
                 print('    Performing likelihood test...')
                 lls = [likelihood_test(test_sample[:,0,i],test_sample[:,1,i],log_ens[i],Bspl) for i in range(n_E)]

@@ -9,7 +9,7 @@ from scipy import stats
 from scipy.stats._distn_infrastructure import rv_frozen
 from . import media
 from .pdg import FLUKA2PDG
-from .maths import efn, lin, cbc, qrt, a, b, BSpline
+from .maths import efn, lin, cbc, qrt, a, b, BSpline3D
 
 
 def ltot_scale(m0: media.Medium, m1: media.Medium):
@@ -188,7 +188,7 @@ class Parametrization1D(ModelBase):
         return data
 
     @staticmethod
-    def load_thetas() -> Dict[int, BSpline]:
+    def load_thetas() -> Dict[int, BSpline3D]:
         data = {}
         for entry in (files("shosim") / "resources" / "theta").iterdir():
             if not entry.is_file():
@@ -198,11 +198,11 @@ class Parametrization1D(ModelBase):
                 c = theta["c"]
                 t = tuple(theta[f"t{_}"] for _ in range(c.ndim))
                 k = theta["k"]
-                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(t, c, k)
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline3D.create(t, c, k)
         return data
 
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
-    THETAS: Dict[int, BSpline] = load_thetas()
+    THETAS: Dict[int, BSpline3D] = load_thetas()
     # density and nphase used in FLUKA MC
     FLUKA_MEDIUM = media.Medium(0.9216, 1.33)
 
