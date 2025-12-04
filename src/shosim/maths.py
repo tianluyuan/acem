@@ -314,15 +314,15 @@ class BSpline(NamedTuple):
             
     def sample_ab(self,
                   logE: float,
-                  num_samples: int,
-                  random_state: None | Generator=None) -> np.ndarray:
+                  size: None | int=None,
+                  random_state: None | Generator=None) -> tuple | np.ndarray:
         """
         Samples (a', b') for given log10E via rejection sampling
 
         Parameters
         ----------
         logE: log10(logE [GeV])
-        num_samples: number of (a', b') samples to draw
+        size: number of (a', b') samples to draw
         random_state: random_state state
 
         Returns
@@ -335,30 +335,30 @@ class BSpline(NamedTuple):
         ap, bp = self.mode(logE)
         f_max = self.__call__(ap, bp, logE)
         samples = []
-        while len(samples) < num_samples:
+        _size = 1 if size is None else size
+        while len(samples) < _size:
             x_star = random_state.uniform()
             y_star = random_state.uniform()
             z_star = random_state.uniform(0., f_max)
-
             if z_star <= self.__call__(x_star, y_star, logE):
                 samples.append((x_star, y_star))
             
-        return np.asarray(samples)
+        return samples[0] if size is None else np.asarray(samples)
 
     def _legacy_sample_ab(self,
                           logE: float,
-                          num_samples: int,
+                          size: None | int=None,
                           random_state: None | Generator=None,
                           sample_depth: int=7,
                           binning_offset: bool=True,
-                          num_quad_nodes: int=7) -> np.ndarray:
+                          num_quad_nodes: int=7) -> tuple | np.ndarray:
         """
         Samples (a', b') for given log10E via binary split algorithm.
 
         Parameters
         ----------
         logE: log10(logE [GeV])
-        num_samples: number of (a', b') samples to draw
+        size: number of (a', b') samples to draw
         random_state: rng state, if None initialize from scratch [Default: None]
         sample_depth: Number of times to divide regions during binary grid sampling.
                       A sample_depth of n will give a sample precision of of 1/2^n
@@ -419,24 +419,25 @@ class BSpline(NamedTuple):
         integrated_grid = np.sum(np.exp(Z) * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4, axis=(2, 3))
 
         ranges = np.insert(integrated_grid.reshape(-1).cumsum(), 0, 0)
-        indices = np.searchsorted(ranges, random_state.random(size=num_samples)*ranges[-1]) - 1
+        _size = 1 if size is None else size
+        indices = np.searchsorted(ranges, random_state.random(size=_size)*ranges[-1]) - 1
         a_regions = indices // CoefsE.shape[1]
         b_regions = indices % CoefsE.shape[1]
 
 
-        Coefs_abE = CoefsE[a_regions, b_regions, :, :].reshape(num_samples, 1, 1, 4, 4)
+        Coefs_abE = CoefsE[a_regions, b_regions, :, :].reshape(_size, 1, 1, 4, 4)
 
-        l_a = np.reshape(a_k[a_regions + 3], (num_samples, 1, 1))
-        h_a = np.reshape(a_k[a_regions + 4], (num_samples, 1, 1))
-        l_b = np.reshape(b_k[b_regions + 3], (num_samples, 1, 1))
-        h_b = np.reshape(b_k[b_regions + 4], (num_samples, 1, 1))
+        l_a = np.reshape(a_k[a_regions + 3], (_size, 1, 1))
+        h_a = np.reshape(a_k[a_regions + 4], (_size, 1, 1))
+        l_b = np.reshape(b_k[b_regions + 3], (_size, 1, 1))
+        h_b = np.reshape(b_k[b_regions + 4], (_size, 1, 1))
 
         for _ in range(sample_depth):
             m_a = (l_a + h_a)/2
             # Integrate left and right of m_a
             Z_left = integrate(l_a, m_a, l_b, h_b, Coefs_abE)
             Z_right = integrate(m_a, h_a, l_b, h_b, Coefs_abE)
-            choose_left = random_state.random(size=(num_samples, 1, 1)) < (Z_left / (Z_left + Z_right))
+            choose_left = random_state.random(size=(_size, 1, 1)) < (Z_left / (Z_left + Z_right))
             l_a = np.where(choose_left, l_a, m_a)
             h_a = np.where(choose_left, m_a, h_a)
 
@@ -444,13 +445,14 @@ class BSpline(NamedTuple):
             # Integrate above and bellow
             Z_bottom = integrate(l_a, h_a, l_b, m_b, Coefs_abE)
             Z_top = integrate(l_a, h_a, m_b, h_b, Coefs_abE)
-            choose_bottom = random_state.random(size=(num_samples, 1, 1)) < (Z_bottom / (Z_bottom + Z_top))
+            choose_bottom = random_state.random(size=(_size, 1, 1)) < (Z_bottom / (Z_bottom + Z_top))
             l_b = np.where(choose_bottom, l_b, m_b)
             h_b = np.where(choose_bottom, m_b, h_b)
         if binning_offset:
-            res_a = l_a + random_state.random(size=(num_samples, 1, 1))*(a_k[1]-a_k[0])/2**sample_depth
-            res_b = l_b + random_state.random(size=(num_samples, 1, 1))*(b_k[1]-b_k[0])/2**sample_depth
+            res_a = l_a + random_state.random(size=(_size, 1, 1))*(a_k[1]-a_k[0])/2**sample_depth
+            res_b = l_b + random_state.random(size=(_size, 1, 1))*(b_k[1]-b_k[0])/2**sample_depth
         else:
             res_a = (l_a + h_a)/2
             res_b = (l_b + h_b)/2
-        return np.asarray([res_a.reshape(-1), res_b.reshape(-1)]).T
+        _res = np.asarray([res_a.reshape(-1), res_b.reshape(-1)]).T
+        return _res[0] if size is None else _res

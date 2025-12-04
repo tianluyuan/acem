@@ -41,7 +41,7 @@ class ModelBase(ABC):
     def sample(self,
                pdg: int,
                energy: float,
-               num_samples: int) -> List[Shower1D]:
+               size: None | int) -> Shower1D | List[Shower1D]:
         pass
 
 
@@ -95,7 +95,7 @@ class RWParametrization1D(ModelBase):
     def __init__(self, medium: media.Medium,
                  random_state: Generator | None=None):
         self.medium = medium
-        self._random_state = np.random.default_rng() if random_state is None else random_state
+        self._rng = np.random.default_rng() if random_state is None else random_state
         self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
         assert self._scale >= 0.
 
@@ -148,7 +148,7 @@ class RWParametrization1D(ModelBase):
     def sample(self,
                pdg: int,
                energy: float,
-               num_samples: int=1) -> List[Shower1D]:
+               size: None | int=None) -> Shower1D | List[Shower1D]:
         """
         Samples an individual Shower1D object for a specified
         particle type and energy. Only ltot is randomly sampled.
@@ -158,12 +158,17 @@ class RWParametrization1D(ModelBase):
         pdg: The PDG (Particle Data Group) identifier of the particle. This integer
              specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
         energy: The energy of the particle in GeV
+        size: int or None. If None, a single Shower1D is returned, otherwise
+        a list of Shower1Ds of length size is returned
 
         Returns
         -------
-        List[Shower1D]: The sampled 1D shower profile
+        Shower1D samples (see size above)
         """
-        return [Shower1D(_, self._shape(pdg, energy)) for _ in self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._random_state)]
+        _size = 1 if size is None else size
+        _samp = [Shower1D(_, self._shape(pdg, energy))
+                 for _ in self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)]
+        return _samp[0] if size is None else _samp
 
 
 class Parametrization1D(ModelBase):
@@ -202,7 +207,7 @@ class Parametrization1D(ModelBase):
                  converter: Callable[[int], int] | None=None,
                  random_state: Generator | None=None):
         self.medium: media.Medium = medium
-        self._random_state: Generator = np.random.default_rng() if random_state is None else random_state
+        self._rng: Generator = np.random.default_rng() if random_state is None else random_state
         self._converter: Callable = self._default_converter if converter is None else converter
         self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
         assert self._scale >= 0.
@@ -223,7 +228,7 @@ class Parametrization1D(ModelBase):
 
         if _pdg == 311:
             # K0
-            return 130 if self._random_state.uniform() < 0.5 else 310
+            return 130 if self._rng.uniform() < 0.5 else 310
 
         return _pdg
 
@@ -305,7 +310,7 @@ class Parametrization1D(ModelBase):
     def sample(self,
                pdg: int,
                energy: float,
-               num_samples: int=1) ->List[Shower1D]:
+               size: None | int=None) -> Shower1D | List[Shower1D]:
         """
         Samples an individual Shower1D object for a specified
         particle type and energy.
@@ -315,13 +320,18 @@ class Parametrization1D(ModelBase):
         pdg: The PDG (Particle Data Group) identifier of the particle. This integer
              specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
         energy: The energy of the particle in GeV
+        size: int or None. If None, a single Shower1D is returned, otherwise
+        a list of Shower1Ds of length size is returned
 
         Returns
         -------
-        List[Shower1D]: The sampled 1D shower profile
+        Shower1D samples (see size above)
         """
-        ltots = self.ltot_dist(pdg, energy).rvs(num_samples, random_state=self._random_state)
+        _size = 1 if size is None else size
+        ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
         bspl = self.THETAS[pdg]
-        aps, bps = bspl.sample_ab(np.log10(energy), num_samples, random_state=self._random_state).T
+        aps, bps = bspl.sample_ab(np.log10(energy), _size, random_state=self._rng).T
 
-        return [Shower1D(ltot, self._shape(a(ap), b(bp))) for ltot, ap, bp in zip(ltots, aps, bps)]
+        _samp = [Shower1D(ltot, self._shape(a(ap), b(bp)))
+                 for ltot, ap, bp in zip(ltots, aps, bps)]
+        return _samp[0] if size is None else _samp
