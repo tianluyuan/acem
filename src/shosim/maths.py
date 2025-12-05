@@ -261,14 +261,10 @@ class BSpline3D:
         _size = 1 if size is None else size
         current_count = 0
 
-        # Heuristic: We generate more points than needed (oversampling) 
-        # to account for rejections. Adjust 'factor' based on acceptance rate.
-        # A factor of 2-3 works for dense distributions, 10 for sparse
-        oversample_factor = 5
-
+        oversample_factor = int(f_max) + 1
         while current_count < _size:
             n_remaining = _size - current_count
-            batch_size = max(n_remaining * oversample_factor, 100)
+            batch_size = n_remaining * oversample_factor
 
             x_stars = random_state.uniform(size=batch_size)
             y_stars = random_state.uniform(size=batch_size)
