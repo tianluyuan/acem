@@ -3,6 +3,9 @@ import numpy as np
 from scipy import stats, optimize
 from matplotlib import pyplot as plt
 import argparse
+from importlib.resources import files, as_file
+from shosim.util import load_batch
+from shosim.maths import qrt, cbc, lin
 plt.style.use('present')
 
 
@@ -11,7 +14,6 @@ n_E = len(log_ens) # Number of energy levels used for fitting
 
 
 if __name__ == '__main__':
-    from FitSpline import load_ian
     parser = argparse.ArgumentParser('Fitting script')
     parser.add_argument('particles', nargs='+')
     parser.add_argument('--show', action='store_true', default=False,
@@ -52,12 +54,12 @@ if __name__ == '__main__':
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
 
-        Dat = load_ian(particle, f'DataOutputs_{particle}', clean=clean)
-        energy_strs = list(Dat.keys())
+        Dat = load_batch(f'fluka/DataOutputs_{particle}/*.csv', clean=clean)
+        ens = list(Dat.keys())
         results = []
 
         for i in range(n_E):
-            df = Dat[energy_strs[i]]
+            df = Dat[ens[i]]
             ltots = df['ltot']
             _res = form.fit(ltots, method='MLE')
             results.append(_res)
@@ -81,9 +83,9 @@ if __name__ == '__main__':
                     plt.show()
                 if args.ssavefig:
                     plt.yscale('linear')
-                    plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{energy_strs[i]}.pdf', bbox_inches='tight')
+                    plt.savefig(f'{args.ssavefig}/ltot_dist_{particle}_{ens[i]}.pdf', bbox_inches='tight')
                     plt.yscale('log')
-                    plt.savefig(f'{args.ssavefig}/ltot_logdist_{particle}_{energy_strs[i]}.pdf', bbox_inches='tight')
+                    plt.savefig(f'{args.ssavefig}/ltot_logdist_{particle}_{ens[i]}.pdf', bbox_inches='tight')
 
         results = np.asarray(results) * sgns
         _sel = results[:, 0] > 0
@@ -108,4 +110,6 @@ if __name__ == '__main__':
 
         pdict = {f'p{_i}': _par for _i, _par in enumerate(par_fits)}
         pdict['s'] = sgns
-        np.savez(f'ltot_{particle}.npz', **pdict)
+        outf = files("shosim") / "resources" / "ltot" / f"{particle}.npz"
+        with as_file(outf) as fpath:
+            np.savez(fpath, **pdict)

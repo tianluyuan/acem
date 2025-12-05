@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
         '''
         This block performs the fitting.
-        It will stop after "num_iters" iterations, but can be interupted at any point.
+        It can be interupted at any point.
         The value of the coefficients in the spline basis will be saved to "theta"
         '''
         if perform_likelihood_test:
