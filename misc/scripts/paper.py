@@ -159,12 +159,22 @@ def fig4():
         plt.figure(1)
         plt.plot(dats.keys(), npeaks1/(npeaks1+npeaks2+npeaksx), c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
 
-        ltot = [dats[_][:, 501] for _ in dats]
-        apar = [dats[_][:, 502] for _ in dats]
-        bpar = [dats[_][:, 503] for _ in dats]
-        lva = [stats.spearmanr(_l, maths.aprime(_a)).statistic for _l, _a in zip(ltot, apar)]
-        lvb = [stats.spearmanr(_l, maths.bprime(_b)).statistic for _l, _b in zip(ltot, bpar)]
-        avb = [stats.spearmanr(maths.aprime(_a), maths.bprime(_b)).statistic for _a, _b in zip(apar, bpar)]
+        lva = []
+        lvb = []
+        avb = []
+
+        for key in dats:
+            data_array = dats[key]
+            ltot_col = data_array[:, 501]
+            apri_col = maths.aprime(data_array[:, 502])
+            bpri_col = maths.aprime(data_array[:, 503])
+
+            stacked_data = np.stack((ltot_col, apri_col, bpri_col), axis=1)
+            rho_matrix = stats.spearmanr(stacked_data).statistic
+
+            lva.append(rho_matrix[0, 1]) 
+            lvb.append(rho_matrix[0, 2])
+            avb.append(rho_matrix[1, 2])
 
         ax[0].plot(dats.keys(), lva, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
         ax[1].plot(dats.keys(), lvb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
