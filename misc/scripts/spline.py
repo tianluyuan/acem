@@ -7,10 +7,6 @@ import argparse
 from shosim import maths, util
 from importlib.resources import files, as_file
 
-### Data params
-log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
-# log_ens = np.asarray([3, 4, 5]) # log (base 10) of the energy values used for fitting Emre's data
-
 ### Fit Parameters
 dif_orders = [3, 3, 3] # order of difference to penalize for smoothing [a,b,E]
 smoothness = [0.1, 0.1, 0.01] # degree of smoothing along each dimension [a,b,E]
@@ -22,15 +18,11 @@ c_b = 17 # Number of basis splines along b-dimension
 c_E = 8 # Number of basis splines along E-dimension
 n_a = 450 # Number of histogram bins along a-dimension
 n_b = 450 # Number of histogram bins along b-dimension
-n_E = len(log_ens) # Number of energy levels used for fitting
 deg = 3 # degree of the BSpline
 
-## Define the knots
+## Define the ab ranges
 ab_min = 0
 ab_max = 1
-a_k = np.linspace(ab_min,ab_max,c_a - deg + 1)
-b_k = np.linspace(ab_min,ab_max,c_b - deg + 1)
-E_k = np.linspace(log_ens[0],log_ens[-1],c_E - deg + 1)
 
 ga = maths.aprime # Function to transform a values into range (0,1)
 gb = maths.bprime # Function to transform a values into range (0,1)
@@ -40,12 +32,6 @@ num_iters = 1000 # Number of iterations of least square regression for fitting, 
 perform_likelihood_test = True # Perform likelihood test on test sample for monitoring progress
 test_sample_size = 4301 # Number of elements in the testing data set
 theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
-
-## add knot values on above and below the range of interest
-a_k = sc.interpolate.interp1d(np.arange(c_a - deg + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_a + 1))
-b_k = sc.interpolate.interp1d(np.arange(c_b - deg + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_b + 1))
-E_k = sc.interpolate.interp1d(np.arange(c_E - deg + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_E + 1))
-knots = (a_k, b_k, E_k)
 
 
 '''
@@ -85,10 +71,22 @@ if __name__ == '__main__':
     parser.add_argument('--show', action='store_true', default=False,
                         help='Show fitted a\', b\' distributions for each E slice')
     args = parser.parse_args()
+
+    a_k = np.linspace(ab_min,ab_max,c_a - deg + 1)
+    b_k = np.linspace(ab_min,ab_max,c_b - deg + 1)
+
+    ## add knot values on above and below the range of interest
+    a_k = sc.interpolate.interp1d(np.arange(c_a - deg + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_a + 1))
+    b_k = sc.interpolate.interp1d(np.arange(c_b - deg + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_b + 1))
     for particle in args.particles:
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv',
                               clean=particle not in ('ELECTRON', 'PHOTON'))
         energies = list(Dat.keys())
+        log_ens = np.log10(energies) # log (base 10) of the energy values used for fitting
+        n_E = len(log_ens) # Number of energy levels used for fitting
+        E_k = np.linspace(log_ens[0],log_ens[-1],c_E - deg + 1)
+        E_k = sc.interpolate.interp1d(np.arange(c_E - deg + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_E + 1))
+        knots = (a_k, b_k, E_k)
 
         ## Make Y matrix of histogram values to fit 
         Y = np.zeros((n_a,n_b,n_E))
@@ -219,9 +217,9 @@ if __name__ == '__main__':
             # print(f'        Least squares R^2: {res[3]:5.3e}')
             print(f'        Convergence / Niterations: {res[1]:}')
             print(f'        Min / max theta: {theta.min()}, {theta.max()}')
-            Bspl = maths.BSpline3D.create(knots,
-                                          theta.reshape((c_a,c_b,c_E)) - coeff_shift,
-                                          deg)
+            Bspl = maths.BSpline3D(sc.interpolate.NdBSpline(knots,
+                                                            theta.reshape((c_a,c_b,c_E)) - coeff_shift,
+                                                            deg))
             if perform_likelihood_test:
                 print('    Performing likelihood test...')
                 lls = [likelihood_test(test_sample[:,0,i],test_sample[:,1,i],log_ens[i],Bspl) for i in range(n_E)]

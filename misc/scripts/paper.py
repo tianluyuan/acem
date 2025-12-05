@@ -3,7 +3,7 @@ import numpy as np
 from scipy import stats
 from matplotlib import pyplot as plt
 
-from shosim import model, util
+from shosim import model, util, maths
 
 plt.style.use("paper-sans")
 prop_cycle = plt.rcParams["axes.prop_cycle"]
@@ -100,7 +100,7 @@ def fig3():
     plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
-    plt.ylim(ymin=0)
+    plt.ylim(0, 4)
     plt.legend()
     plt.savefig("fig/paper/fig3a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig3a.png", bbox_inches="tight")
@@ -150,7 +150,7 @@ def fig4():
     pcolors = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2]]
     plinest = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-."]
     for i, particle in enumerate(particles):
-        dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", util.load_npy, clean=False)
+        dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", loader=util.load_npy, clean=False)
         npeaks1 = np.asarray([(dats[_][:,507]==1).sum() for _ in dats])
         npeaks2 = np.asarray([(dats[_][:,507]==2).sum() for _ in dats])
         npeaksx = np.asarray([((dats[_][:, 507] != 1) & (dats[_][:, 507] != 2)).sum() for _ in dats])
@@ -174,7 +174,6 @@ def fig5():
     nppi = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
     dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
-    dfpi = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
     assert(dfem["Zbins"].nunique()==1)
     assert(dfem["Zwidth"].nunique()==1)
@@ -183,31 +182,54 @@ def fig5():
     xs = np.arange(0, nbins * zwdth)
     nruns = 100
 
+    a_ems = []
+    b_ems = []
     for _ in range(nruns):
+        a_em = npem[_, nbins+2]
+        b_em = npem[_, nbins+3]
         plt.plot(xs,
                  stats.gamma(
-                     npem[_, nbins+2],
-                     scale=model.Shower1D.FLUKA_MEDIUM.lrad/npem[_, nbins+3]).pdf(xs),
+                     a_em,
+                     scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/b_em).pdf(xs),
                  color=colors[0],
                  label=rf"1 TeV $e^-$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
+        a_ems.append(a_em)
+        b_ems.append(b_em)
+    a_pis = []
+    b_pis = []
     for _ in range(nruns):
+        a_pi = nppi[_, nbins+2]
+        b_pi = nppi[_, nbins+3]
         plt.plot(xs,
                  stats.gamma(
-                     nppi[_, nbins+2],
-                     scale=model.Shower1D.FLUKA_MEDIUM.lrad/nppi[_, nbins+3]).pdf(xs),
+                     a_pi,
+                     scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/b_pi).pdf(xs),
                  color=colors[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
+        a_pis.append(a_pi)
+        b_pis.append(b_pi)
     plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
-    plt.ylim(ymin=0)
+    plt.ylim(0, 4)
     plt.legend()
     plt.savefig("fig/paper/fig5a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig5a.png", bbox_inches="tight")
+
+    plt.clf()
+    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)")
+    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=colors[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)")
+    plt.xlabel(r"$a'$")
+    plt.ylabel(r"$b'$")
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.savefig("fig/paper/fig5b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig5b.png", bbox_inches="tight")
 
 
 if __name__ == "__main__":
