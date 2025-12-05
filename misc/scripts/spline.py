@@ -1,18 +1,11 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
 import scipy as sc
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-import pandas as pd
-import glob
 import argparse
-from collections import OrderedDict
-
+from shosim import maths, util
+from importlib.resources import files, as_file
 
 ### Data params
 log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
@@ -30,17 +23,17 @@ c_E = 8 # Number of basis splines along E-dimension
 n_a = 450 # Number of histogram bins along a-dimension
 n_b = 450 # Number of histogram bins along b-dimension
 n_E = len(log_ens) # Number of energy levels used for fitting
+deg = 3 # degree of the BSpline
 
 ## Define the knots
 ab_min = 0
 ab_max = 1
-a_k = np.linspace(ab_min,ab_max,c_a - 3 + 1)
-b_k = np.linspace(ab_min,ab_max,c_b - 3 + 1)
-E_k = np.linspace(log_ens[0],log_ens[-1],c_E - 3 + 1)
-# E_k = np.linspace(3,5,c_E - 3 + 1) # emre
+a_k = np.linspace(ab_min,ab_max,c_a - deg + 1)
+b_k = np.linspace(ab_min,ab_max,c_b - deg + 1)
+E_k = np.linspace(log_ens[0],log_ens[-1],c_E - deg + 1)
 
-ga = lambda a : 1/np.sqrt(a) # Function to transform a values into range (0,1)
-gb = lambda b : 1/(1+b**2) # Function to transform a values into range (0,1)
+ga = maths.aprime # Function to transform a values into range (0,1)
+gb = maths.bprime # Function to transform a values into range (0,1)
 
 ### Fitting process parameters
 num_iters = 1000 # Number of iterations of least square regression for fitting, can be quit early
@@ -48,28 +41,11 @@ perform_likelihood_test = True # Perform likelihood test on test sample for moni
 test_sample_size = 4301 # Number of elements in the testing data set
 theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
 
-
-def load_emre(particle, directory='gamma_fits'):
-    Dat = OrderedDict()
-    energies = [str(int(num/1e3)) for num in 10**log_ens]
-    lrad = 0.358 / 0.9216
-    for eflt, estr in zip(10**log_ens, energies):
-        fpaths = glob.glob(f'{directory}/*{estr}TeV_{particle}_v2.csv')
-        assert len(fpaths) == 1
-        df = pd.read_csv(fpaths[0], index_col=0)
-        df['Energy'] = eflt
-        df['gammaA'] = df['a']
-        df['gammaB'] = df['b'] * lrad
-
-        Dat[estr] = df
-    return Dat
-
 ## add knot values on above and below the range of interest
-a_k = sc.interpolate.interp1d(np.arange(c_a - 3 + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_a + 1))
-b_k = sc.interpolate.interp1d(np.arange(c_b - 3 + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_b + 1))
-E_k = sc.interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-3,c_E + 1))
+a_k = sc.interpolate.interp1d(np.arange(c_a - deg + 1),a_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_a + 1))
+b_k = sc.interpolate.interp1d(np.arange(c_b - deg + 1),b_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_b + 1))
+E_k = sc.interpolate.interp1d(np.arange(c_E - deg + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_E + 1))
 knots = (a_k, b_k, E_k)
-
 
 
 '''
@@ -81,18 +57,14 @@ Params:
     Coefs: coefficients defining the model we are testing
            Coefs[i,j,k,q,r,s] is the coefficient on the (a**q b**r E**s) term in the intersection of the 
            i-th a region, j-th b region, and k-th E region
-    knots: tuple (a_k,b_k,E_k) where each element is a 1d array of the knots defining the spline regions along each dimension
-           if not supplied, make_knots is called with the default values.
 Returns:
     log-likelihood of the given sample
 '''
-def likelihood_test(a_sample,b_sample,E,Coefs,knots=None):
+def likelihood_test(a_sample,b_sample,E,BSpl):
     ## If knots aren't specified, generate them from default values
-    if knots == None:
-        knots = make_knots(Coefs.shape[0],Coefs.shape[1],Coefs.shape[2])
-    norm_factor = integrate_grid(Coefs,E,knots).sum()
+    norm_factor = BSpl.integrate_grid(E).sum()
     # print('... normalization:', norm_factor)
-    return Eval_from_Coefs(a_sample,b_sample,E,Coefs,knots).sum() - (np.size(a_sample) * np.log(norm_factor))
+    return BSpl(a_sample,b_sample,E).sum() - (np.size(a_sample) * np.log(norm_factor))
 
 
 '''
@@ -114,11 +86,9 @@ if __name__ == '__main__':
                         help='Show fitted a\', b\' distributions for each E slice')
     args = parser.parse_args()
     for particle in args.particles:
-        Dat = load_batch(f'fluka/DataOutputs_{particle}/*.csv',
-                         clean=particle not in ('ELECTRON', 'PHOTON'))
+        Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv',
+                              clean=particle not in ('ELECTRON', 'PHOTON'))
         energies = list(Dat.keys())
-
-        output_file = f"Coeffs_{particle}.npy"
 
         ## Make Y matrix of histogram values to fit 
         Y = np.zeros((n_a,n_b,n_E))
@@ -146,15 +116,15 @@ if __name__ == '__main__':
         B_E = np.zeros((n_E,c_E))
         for i in range(n_a):
             for j in range(c_a):
-                B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + 3 + 2],extrapolate = False)(x_a[i])
+                B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + deg + 2],extrapolate = False)(x_a[i])
                 if np.isnan(B_a[i,j]) : B_a[i,j] = 0
         for i in range(n_b):
             for j in range(c_b):
-                B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + 3 + 2],extrapolate = False)(x_b[i])
+                B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + deg + 2],extrapolate = False)(x_b[i])
                 if np.isnan(B_b[i,j]) : B_b[i,j] = 0
         for i in range(n_E):
             for j in range(c_E):
-                B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + 3 + 2],extrapolate = False)(x_E[i])
+                B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + deg + 2],extrapolate = False)(x_E[i])
                 if np.isnan(B_E[i,j]) : B_E[i,j] = 0
         B_a_pinv = np.linalg.pinv(B_a)
         B_b_pinv = np.linalg.pinv(B_b)
@@ -183,7 +153,7 @@ if __name__ == '__main__':
 
         '''
         This block performs the fitting.
-        It will stop after "num_iters" iterations, but can be interupted at any point.
+        It can be interupted at any point.
         The value of the coefficients in the spline basis will be saved to "theta"
         '''
         if perform_likelihood_test:
@@ -249,20 +219,26 @@ if __name__ == '__main__':
             # print(f'        Least squares R^2: {res[3]:5.3e}')
             print(f'        Convergence / Niterations: {res[1]:}')
             print(f'        Min / max theta: {theta.min()}, {theta.max()}')
+            Bspl = maths.BSpline3D.create(knots,
+                                          theta.reshape((c_a,c_b,c_E)) - coeff_shift,
+                                          deg)
             if perform_likelihood_test:
-                Coefs_sofar = BSpline2Poly(theta.reshape((c_a,c_b,c_E)) - coeff_shift, knots)
                 print('    Performing likelihood test...')
-                lls = [likelihood_test(test_sample[:,0,i],test_sample[:,1,i],log_ens[i],Coefs_sofar,knots) for i in range(n_E)]
+                lls = [likelihood_test(test_sample[:,0,i],test_sample[:,1,i],log_ens[i],Bspl) for i in range(n_E)]
                 print(f'        Log-likelihood: {np.sum(lls):5.3e}')
 
             if res[1] == 0:
                 print('        Saving coefficients')
-                ## Convert the coefficients to the polynomial basis (1,x,x**2,x**3,...)
-                ## Then save to "output_file"
-                ## Shift to convert into a density
-                # np.save(output_file, Coefs_sofar)
-                np.save(f'theta_{output_file}',
-                        theta.reshape((c_a,c_b,c_E)) - coeff_shift)
+                outf = files("shosim") / "resources" / "theta" / f"{particle}.npz"
+                with as_file(outf) as fpath:
+                    # Shift to convert into a density with coeff_shift
+                    # this notation is to match the NdBSpline
+                    np.savez(fpath,
+                             t0=knots[0],
+                             t1=knots[1],
+                             t2=knots[2],
+                             c=theta.reshape((c_a,c_b,c_E)) - coeff_shift,
+                             k=deg)
 
             if np.max(np.abs(delta)) < 1e-6:
                 break

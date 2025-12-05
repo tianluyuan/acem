@@ -1,6 +1,8 @@
-from typing import NamedTuple, Self
+from dataclasses import dataclass
 import itertools
+from functools import cached_property
 import numpy as np
+import numpy.typing as npt
 from numpy.random import Generator
 from scipy import interpolate
 from scipy.optimize import minimize
@@ -21,143 +23,82 @@ def lin(x, t0, t1):
     return t1 * x + t0
 
 
-def aprime(a: float) -> float:
+def aprime(a):
     """
     Function to transform a into range (0,1)
     """
     return 1./np.sqrt(a)
 
 
-def bprime(b: float) -> float:
+def bprime(b):
     """
     Function to transform b into range (0,1)
     """
     return 1./(1.+b**2)
 
 
-def a(aprime: float) -> float:
+def a(aprime):
     """
     Function to transform a' with domain (0,1) back to a
     """
     return 1./aprime**2
 
 
-def b(bprime: float) -> float:
+def b(bprime):
     """
     Function to transform b' with domain (0,1) back to b
     """
     return np.sqrt(1./bprime-1.)
 
 
-class BSpline(NamedTuple):
-    """
-    instantiate with create factory
-    """
-    coefs: np.ndarray
-    knots: tuple[np.ndarray, np.ndarray, np.ndarray]
-    poly_coefs: np.ndarray
+@dataclass(frozen=True)
+class BSpline3D:
+    bspl: interpolate.NdBSpline
 
-    @classmethod
-    def create(cls, coefs: np.ndarray, **kwargs) -> Self:
+    def __post_init__(self):
+        assert np.all([_ == 3 for _ in self.bspl.k])
+        assert len(self.bspl.t) == 3
+        assert self.bspl.c.ndim == 3
+        
+    @cached_property
+    def c_poly(self) -> np.ndarray: 
         """
-        Given coefs, constructs its knots, a tuple (a_k,b_k,E_k)
-        where each element is the 1d array of the knots defining the
-        spline regions along each dimension.
-
-        Additionally converts basis spline coefficients into polynomial
-        coefficients and stores them in poly_coefs.
-        poly_coefs: Array with shape (c_a-3, c_b-3, c_E-3, 4, 4, 4) . 
-        poly_coefs[i,j,k,q,r,s] is the coeficient on the a**q b**r logE**s term in the space right after knot a_k[i+3], b_k[j+3], and E_k[k+3]
-
-        Parameters
-        ----------
-        BSpline coefs: Array with shape (c_a,c_b,c_E) of coefficients for a basis spline and its knots
-
         Returns
         -------
-        BSpline object for coefs with corresponding knots and poly_coefs
+        Returns the converted basis spline coefficients in terms of polynomial
+        coefficients.
+
+        c_poly: Array with shape (c_a-3, c_b-3, c_E-3, 4, 4, 4) . 
+        c_poly[i,j,k,q,r,s] is the coeficient on the a**q b**r logE**s term in the space right after knot a_k[i+3], b_k[j+3], and E_k[k+3]
+        BSpline3D object
 
         """
-        knots = cls._make_knots(*coefs.shape, **kwargs)
-        assert np.all(np.asarray([len(_) for _ in knots]) == np.asarray([_ + 4 for _ in coefs.shape]))
-        a_k = knots[0]
-        b_k = knots[1]
-        E_k = knots[2]
+        a_k, b_k, E_k = self.bspl.t
 
         D_a = a_k[1] - a_k[0]
         D_b = b_k[1] - b_k[0]
         D_E = E_k[1] - E_k[0]
-        poly_coefs = np.zeros((coefs.shape[0] - 3,coefs.shape[1] - 3,coefs.shape[2] - 3,4,4,4))
-        BSplinePieces_a = np.zeros((coefs.shape[0],4,4))
-        BSplinePieces_b = np.zeros((coefs.shape[1],4,4))
-        BSplinePieces_E = np.zeros((coefs.shape[2],4,4))
+        c_poly = np.zeros((self.bspl.c.shape[0] - 3,self.bspl.c.shape[1] - 3,self.bspl.c.shape[2] - 3,4,4,4))
+        BSplinePieces_a = np.zeros((self.bspl.c.shape[0],4,4))
+        BSplinePieces_b = np.zeros((self.bspl.c.shape[1],4,4))
+        BSplinePieces_E = np.zeros((self.bspl.c.shape[2],4,4))
 
         # BSplinePieces_?[i,j,k] holds the coefficient on the x**k term of the j-th piece of the i-th basis spline
-        for i in range(coefs.shape[0]):
+        for i in range(self.bspl.c.shape[0]):
             for j in range(4):
-                BSplinePieces_a[i,j,:] = cls._BSplinePiece(j,a_k[0],D_a,i)
-        for i in range(coefs.shape[1]):
+                BSplinePieces_a[i,j,:] = self._BSplinePiece(j,a_k[0],D_a,i)
+        for i in range(self.bspl.c.shape[1]):
             for j in range(4):
-                BSplinePieces_b[i,j,:] = cls._BSplinePiece(j,b_k[0],D_b,i)
-        for i in range(coefs.shape[2]):
+                BSplinePieces_b[i,j,:] = self._BSplinePiece(j,b_k[0],D_b,i)
+        for i in range(self.bspl.c.shape[2]):
             for j in range(4):
-                BSplinePieces_E[i,j,:] = cls._BSplinePiece(j,E_k[0],D_E,i)
+                BSplinePieces_E[i,j,:] = self._BSplinePiece(j,E_k[0],D_E,i)
         for q, r, s, l, m, n in itertools.product(*[range(4)]*6):
-            poly_coefs[:,:,:,q,r,s] += coefs[l:poly_coefs.shape[0]+l,m:poly_coefs.shape[1]+m,n:poly_coefs.shape[2]+n] \
-                * np.tile(BSplinePieces_a[l:poly_coefs.shape[0]+l,3-l,q].reshape((poly_coefs.shape[0],1,1)),(1,poly_coefs.shape[1],poly_coefs.shape[2])) \
-                * np.tile(BSplinePieces_b[m:poly_coefs.shape[1]+m,3-m,r].reshape((1,poly_coefs.shape[1],1)),(poly_coefs.shape[0],1,poly_coefs.shape[2])) \
-                * np.tile(BSplinePieces_E[n:poly_coefs.shape[2]+n,3-n,s].reshape((1,1,poly_coefs.shape[2])),(poly_coefs.shape[0],poly_coefs.shape[1],1))
-
-        return cls(
-            coefs=coefs,
-            knots=knots,
-            poly_coefs=poly_coefs
-        )
-
-    @staticmethod
-    def _make_knots(
-            c_a: int,
-            c_b: int,
-            c_E: int,
-            a_min: float = 0.0,
-            a_max: float = 1.0,
-            b_min: float = 0.0,
-            b_max: float = 1.0,
-            E_min: float = 1.0,
-            E_max: float = 6.0
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Makes the knots for the given Coefficients
-        Provided a range of valid values for each of the three parameters
-
-        Parameters
-        ----------
-        a_reg: number of valid regions in the a dimension
-        b_reg: number of valid regions in the b dimension
-        c_E: number of valid regions in the logE dimension
-        a_min: minumum value in the a dimension, [Default = 0]
-        a_max: maximum value in the a dimension, [Default = 1]
-        b_min: minumum value in the b dimension, [Default = 0]
-        b_max: maximum value in the b dimension, [Default = 1]
-        E_min: minumum value in the logE dimension, [Default = 1]
-        E_max: maximum value in the logE dimension, [Default = 6]
-
-        Note that returned knot values will extend past these values for b-spline fitting purposes
-        Returns
-        -------
-        a_k: 1d array of knots for the a dimension
-        b_k: 1d array of knots for the b dimension
-        E_k: 1d array of knots for the logE dimension
-        """
-        ## Define the knots
-        a_k = np.linspace(a_min,a_max,c_a - 3 + 1)
-        b_k = np.linspace(b_min,b_max,c_b - 3 + 1)
-        E_k = np.linspace(E_min,E_max,c_E - 3 + 1)
-        ## add knot values on above and below the range of interest
-        a_k = interpolate.interp1d(np.arange(c_a - 3 + 1),a_k,bounds_error=False,fill_value="extrapolate")(np.arange(-3,c_a + 1))
-        b_k = interpolate.interp1d(np.arange(c_b - 3 + 1),b_k,bounds_error=False,fill_value="extrapolate")(np.arange(-3,c_b + 1))
-        E_k = interpolate.interp1d(np.arange(c_E - 3 + 1),E_k,bounds_error=False,fill_value="extrapolate")(np.arange(-3,c_E + 1))
-        return a_k,b_k,E_k
+            c_poly[:,:,:,q,r,s] += self.bspl.c[l:c_poly.shape[0]+l,m:c_poly.shape[1]+m,n:c_poly.shape[2]+n] \
+                * np.tile(BSplinePieces_a[l:c_poly.shape[0]+l,3-l,q].reshape((c_poly.shape[0],1,1)),(1,c_poly.shape[1],c_poly.shape[2])) \
+                * np.tile(BSplinePieces_b[m:c_poly.shape[1]+m,3-m,r].reshape((1,c_poly.shape[1],1)),(c_poly.shape[0],1,c_poly.shape[2])) \
+                * np.tile(BSplinePieces_E[n:c_poly.shape[2]+n,3-n,s].reshape((1,1,c_poly.shape[2])),(c_poly.shape[0],c_poly.shape[1],1))
+        return c_poly
 
     @staticmethod
     def _BSplinePiece(
@@ -196,43 +137,27 @@ class BSpline(NamedTuple):
                                 -3*D**2*n**2 - 24*D**2*n - 48*D**2 - 6*D*n*x_0 - 24*D*x_0 - 3*x_0**2,
                                 3*D*n + 12*D + 3*x_0,-1])/(6*D**3)
 
-    def __repr__(self):
-        repr_content = (
-            f"coefs={self.coefs}, "
-            f"knots='{self.knots}'"
-        )
-        
-        return f"{type(self).__name__}({repr_content})"
-
-    def __call__(self, a: float, b: float, logE: float) -> float:
+    def __call__(self,
+                 aprime: float | npt.ArrayLike,
+                 bprime: float | npt.ArrayLike,
+                 logE: float | npt.ArrayLike) -> np.ndarray:
         """
         Parameters
         ----------
-        a: first parameter for gamma distribution, a', transformed to lie on [0, 1]
-        b: second parameter for gamma distribution, b', transformed to lie on [0, 1]
+        aprime: first parameter for gamma distribution, a', transformed to lie on [0, 1]
+        bprime: second parameter for gamma distribution, b', transformed to lie on [0, 1]
         logE: primary particle energy in log10(logE [GeV])
 
         Returns
         -------
-        float: Result of evaluating BSpline at the provided a,b,logE values
-        """
-        ## if knots aren't specified generate them from default values
-        a_k = self.knots[0]
-        b_k = self.knots[1]
-        E_k = self.knots[2]
-        a_i = np.searchsorted(a_k[3:-3], a, side='right')
-        b_i = np.searchsorted(b_k[3:-3], b, side='right')
-        E_i = np.searchsorted(E_k[3:-3], logE, side='right')
+        ndarray: Result of evaluating BSpline at the provided a,b,logE values
 
-        a_i -= (a_i > self.poly_coefs.shape[0]) # so that things don't break at the upper boundaries
-        b_i -= (b_i > self.poly_coefs.shape[1])
-        E_i -= (E_i > self.poly_coefs.shape[2])
-        Z = 0.
-        for l in range(4):
-            for m in range(4):
-                for n in range(4):
-                    Z += self.poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
-        return Z
+        Notes
+        -----
+        The return values correspond to ln(pdf(a', b'| logE))
+        """
+        A, B, LogE = np.broadcast_arrays(aprime, bprime, logE)
+        return self.bspl(np.asarray([A, B, LogE]).T).T
 
     def mean(self, logE: float) -> tuple[float, float]:
         """
@@ -256,9 +181,7 @@ class BSpline(NamedTuple):
         -------
         tuple[float, float]: mode(a', b') for given logE
         """
-        alpha, beta = self.mean(logE)
-
-        mini = minimize(lambda x: -self.__call__(x[0], x[1], logE), [alpha, beta],
+        mini = minimize(lambda x: -self.bspl((x[0], x[1], logE)), [0.5, 0.5],
                         method='Nelder-Mead', bounds=[(0., 1.), (0., 1.)])
         if not mini.success:
             raise RuntimeError(f"Minimization failure in mode search; {mini.message}")
@@ -282,42 +205,40 @@ class BSpline(NamedTuple):
         ndarray result where result[i,j,k] is the integral over the intersection of
         the i-th a region, j-th b region, and k-th logE region
         """
-        a_k = self.knots[0]
-        b_k = self.knots[1]
-        E_k = self.knots[2]
+        a_k, b_k, E_k = self.bspl.t
 
         ## create nodes for gaussian quadrature
         nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
         weights = np.tile(weights_1d,(num_quad_nodes,1)) * np.tile(weights_1d,(num_quad_nodes,1)).T
         nodes = np.tile(nodes_1d,(num_quad_nodes,1))
-        nodes_array = np.tile(nodes.reshape(1,1,num_quad_nodes,num_quad_nodes),(self.poly_coefs.shape[0],self.poly_coefs.shape[1],1,1))
-        nodesT_array = np.tile(nodes.T.reshape(1,1,num_quad_nodes,num_quad_nodes),(self.poly_coefs.shape[0],self.poly_coefs.shape[1],1,1))
-        # weights_array = np.tile(weights.reshape(1,1,num_quad_nodes,num_quad_nodes),(self.poly_coefs.shape[0],self.poly_coefs.shape[1],1,1))
+        nodes_array = np.tile(nodes.reshape(1,1,num_quad_nodes,num_quad_nodes),(self.c_poly.shape[0],self.c_poly.shape[1],1,1))
+        nodesT_array = np.tile(nodes.T.reshape(1,1,num_quad_nodes,num_quad_nodes),(self.c_poly.shape[0],self.c_poly.shape[1],1,1))
+        # weights_array = np.tile(weights.reshape(1,1,num_quad_nodes,num_quad_nodes),(self.c_poly.shape[0],self.c_poly.shape[1],1,1))
         E_i = np.searchsorted(E_k[3:-3],logE,side='right')
-        E_i -= (E_i > self.poly_coefs.shape[2])
+        E_i -= (E_i > self.c_poly.shape[2])
 
-        Z = np.zeros((*self.poly_coefs.shape[:2],num_quad_nodes,num_quad_nodes))
+        Z = np.zeros((*self.c_poly.shape[:2],num_quad_nodes,num_quad_nodes))
         ## Z[grid of regions a][grid of regions b][grid of nodes a][grid of nodes b]
 
-        l_a = np.tile(a_k[3:-4].reshape(-1,1,1,1),(1,self.poly_coefs.shape[1],num_quad_nodes,num_quad_nodes))
-        h_a = np.tile(a_k[4:-3].reshape(-1,1,1,1),(1,self.poly_coefs.shape[1],num_quad_nodes,num_quad_nodes))
-        l_b = np.tile(b_k[3:-4].reshape(1,-1,1,1),(self.poly_coefs.shape[0],1,num_quad_nodes,num_quad_nodes))
-        h_b = np.tile(b_k[4:-3].reshape(1,-1,1,1),(self.poly_coefs.shape[0],1,num_quad_nodes,num_quad_nodes))
+        l_a = np.tile(a_k[3:-4].reshape(-1,1,1,1),(1,self.c_poly.shape[1],num_quad_nodes,num_quad_nodes))
+        h_a = np.tile(a_k[4:-3].reshape(-1,1,1,1),(1,self.c_poly.shape[1],num_quad_nodes,num_quad_nodes))
+        l_b = np.tile(b_k[3:-4].reshape(1,-1,1,1),(self.c_poly.shape[0],1,num_quad_nodes,num_quad_nodes))
+        h_b = np.tile(b_k[4:-3].reshape(1,-1,1,1),(self.c_poly.shape[0],1,num_quad_nodes,num_quad_nodes))
 
         X_quad = nodes_array * (h_a - l_a) / 2 + (l_a + h_a) / 2
         Y_quad = nodesT_array * (h_b - l_b) / 2 + (l_b + h_b) / 2
         for l, m, n in itertools.product(*[range(4)]*3):
-            Z += np.tile(self.poly_coefs[:,:,E_i-1,l,m,n].reshape((self.poly_coefs.shape[0],self.poly_coefs.shape[1],1,1)),(1,1,num_quad_nodes,num_quad_nodes)) \
+            Z += np.tile(self.c_poly[:,:,E_i-1,l,m,n].reshape((self.c_poly.shape[0],self.c_poly.shape[1],1,1)),(1,1,num_quad_nodes,num_quad_nodes)) \
                 * X_quad**l * Y_quad**m * logE**n
 
         alpha, beta = moment
         moment_kernel = (X_quad**alpha) * (Y_quad**beta)
         return np.sum(np.exp(Z) * moment_kernel * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4,axis=(2,3))
             
-    def sample_ab(self,
-                  logE: float,
-                  size: None | int=None,
-                  random_state: None | Generator=None) -> tuple | np.ndarray:
+    def sample(self,
+               logE: float,
+               size: None | int=None,
+               random_state: None | Generator=None) -> np.ndarray:
         """
         Samples (a', b') for given log10E via rejection sampling
 
@@ -335,25 +256,41 @@ class BSpline(NamedTuple):
             random_state = np.random.default_rng()
         
         ap, bp = self.mode(logE)
-        f_max = self.__call__(ap, bp, logE)
+        f_max = np.exp(self.__call__(ap, bp, logE))
         samples = []
         _size = 1 if size is None else size
-        while len(samples) < _size:
-            x_star = random_state.uniform()
-            y_star = random_state.uniform()
-            z_star = random_state.uniform(0., f_max)
-            if z_star <= self.__call__(x_star, y_star, logE):
-                samples.append((x_star, y_star))
-            
-        return samples[0] if size is None else np.asarray(samples)
+        current_count = 0
 
-    def _legacy_sample_ab(self,
-                          logE: float,
-                          size: None | int=None,
-                          random_state: None | Generator=None,
-                          sample_depth: int=7,
-                          binning_offset: bool=True,
-                          num_quad_nodes: int=7) -> tuple | np.ndarray:
+        # Heuristic: We generate more points than needed (oversampling) 
+        # to account for rejections. Adjust 'factor' based on acceptance rate.
+        # A factor of 2-3 works for dense distributions, 10 for sparse
+        oversample_factor = 5
+
+        while current_count < _size:
+            n_remaining = _size - current_count
+            batch_size = max(n_remaining * oversample_factor, 100)
+
+            x_stars = random_state.uniform(size=batch_size)
+            y_stars = random_state.uniform(size=batch_size)
+            z_stars = random_state.uniform(0., f_max, size=batch_size)
+
+            mask = z_stars <= np.exp(self.__call__(x_stars, y_stars, logE))
+
+            batch_samples = np.column_stack((x_stars[mask], y_stars[mask]))
+
+            samples.append(batch_samples)
+            current_count += len(batch_samples)
+
+        result = np.vstack(samples)[:_size]
+        return result[0] if size is None else result
+
+    def _legacy_sample(self,
+                       logE: float,
+                       size: None | int=None,
+                       random_state: None | Generator=None,
+                       sample_depth: int=7,
+                       binning_offset: bool=True,
+                       num_quad_nodes: int=7) -> np.ndarray:
         """
         Samples (a', b') for given log10E via binary split algorithm.
 
@@ -372,11 +309,6 @@ class BSpline(NamedTuple):
         Returns
         -------
         ndarray of sampled np.array([(a', b')_0, ...])
-
-        Notes
-        -----
-        The resulting sample does not seem to exactly match rejection sampling,
-        but is kept for historical purposes.
         """
         if random_state is None:
             random_state = np.random.default_rng()
@@ -384,7 +316,7 @@ class BSpline(NamedTuple):
         nodes_1d, weights_1d = np.polynomial.legendre.leggauss(num_quad_nodes)
         weights = np.tile(weights_1d, (num_quad_nodes, 1)) * np.tile(weights_1d, (num_quad_nodes, 1)).T
 
-        a_k, b_k, E_k = self.knots
+        a_k, b_k, E_k = self.bspl.t
         ## Subrouting to integrate the spline within a specified region
         def integrate(l_a, h_a, l_b, h_b, Coefs_abE):
             nodes_ = nodes_1d.reshape(1, num_quad_nodes, 1)
@@ -397,8 +329,8 @@ class BSpline(NamedTuple):
                                 np.tile((nodesT_*(h_b-l_b)/2 + (l_b+h_b)/2)**m, (1, num_quad_nodes, 1))
             return np.sum(np.exp(Z) * weights.reshape(1, num_quad_nodes, num_quad_nodes), axis=(-2, -1), keepdims=True) * (h_a-l_a)*(h_b-l_b)/4
         E_i = np.searchsorted(E_k[3:-3], logE, side="right")
-        E_i -= (E_i > self.poly_coefs.shape[2])
-        CoefsE = (self.poly_coefs[:, :, E_i-1, :, :, :] * np.array([1, logE, logE**2, logE**3]).reshape(1, 1, 1, 1, 4)).sum(axis = -1)
+        E_i -= (E_i > self.c_poly.shape[2])
+        CoefsE = (self.c_poly[:, :, E_i-1, :, :, :] * np.array([1, logE, logE**2, logE**3]).reshape(1, 1, 1, 1, 4)).sum(axis = -1)
 
         ## Generate the indices for the regions by integrating over every region and randomly selecting based on their total probability
         nodes = np.tile(nodes_1d, (num_quad_nodes, 1))

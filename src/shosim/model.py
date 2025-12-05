@@ -5,11 +5,11 @@ from typing import Callable, Dict, NamedTuple, List
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from scipy import stats
+from scipy import stats, interpolate
 from scipy.stats._distn_infrastructure import rv_frozen
 from . import media
 from .pdg import FLUKA2PDG
-from .maths import efn, lin, cbc, qrt, a, b, BSpline
+from .maths import efn, lin, cbc, qrt, a, b, BSpline3D
 
 
 def ltot_scale(m0: media.Medium, m1: media.Medium):
@@ -188,18 +188,21 @@ class Parametrization1D(ModelBase):
         return data
 
     @staticmethod
-    def load_thetas() -> Dict[int, BSpline]:
+    def load_thetas() -> Dict[int, BSpline3D]:
         data = {}
         for entry in (files("shosim") / "resources" / "theta").iterdir():
             if not entry.is_file():
                 continue
             with as_file(entry) as fpath:
                 theta = np.load(fpath)
-                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline.create(theta)
+                c = theta["c"]
+                t = tuple(theta[f"t{_}"] for _ in range(c.ndim))
+                k = theta["k"]
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline3D(interpolate.NdBSpline(t, c, k, extrapolate=False))
         return data
 
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
-    THETAS: Dict[int, BSpline] = load_thetas()
+    THETAS: Dict[int, BSpline3D] = load_thetas()
     # density and nphase used in FLUKA MC
     FLUKA_MEDIUM = media.Medium(0.9216, 1.33)
 
@@ -330,7 +333,7 @@ class Parametrization1D(ModelBase):
         _size = 1 if size is None else size
         ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
         bspl = self.THETAS[pdg]
-        aps, bps = bspl.sample_ab(np.log10(energy), _size, random_state=self._rng).T
+        aps, bps = bspl.sample(np.log10(energy), _size, random_state=self._rng).T
 
         _samp = [Shower1D(ltot, self._shape(a(ap), b(bp)))
                  for ltot, ap, bp in zip(ltots, aps, bps)]

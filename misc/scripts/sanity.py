@@ -1,14 +1,13 @@
+#!/usr/bin/env python
 import numpy as np
 from matplotlib import pyplot as plt
-import FitSpline
 from scipy import stats
 import argparse
 from pathlib import Path
+from shosim import util, media
 plt.style.use('present')
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
-
-lrad = 0.3608/0.9216 * 100 # cm
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Fitting script')
@@ -29,8 +28,8 @@ if __name__ == '__main__':
                         help='Save plots to specified directory')
     args = parser.parse_args()
 
-    a = FitSpline.load_npy(args.fpath, args.clean)
-    df = FitSpline.load_csv(args.fpath, args.clean)
+    a = util.load_npy(args.fpath, args.clean)
+    df = util.load_csv(args.fpath, args.clean)
 
     for _ in range(args.npart):
         _row = df.iloc[args.istart+_]
@@ -38,7 +37,7 @@ if __name__ == '__main__':
         xs = np.arange(_nbins) * _row['Zwidth']
         ltot = _row['ltot']
         plt.plot(xs, a[args.istart+_, :_nbins], color=colors[_], label=f'{ltot}')
-        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_], linestyle='--')
+        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=media.IC3.lrad/_row['gammaB']), color=colors[_], linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
     plt.xlim(0, 3000)
@@ -59,7 +58,7 @@ if __name__ == '__main__':
         xs = np.arange(_nbins) * _row['Zwidth']
         plt.plot(xs, x[_, :_nbins], color=colors[_-args.istart])
         ltot = _row['ltot']
-        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=lrad/_row['gammaB']), color=colors[_-args.istart], linestyle='--')
+        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=media.IC3.lrad/_row['gammaB']), color=colors[_-args.istart], linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
     plt.xlim(0, 3000)
@@ -70,7 +69,7 @@ if __name__ == '__main__':
 
     # compare ltot vs a reference
     if args.reference is not None and args.reference.is_file():
-        df_b = FitSpline.load_csv(args.reference, args.clean)
+        df_b = util.load_csv(args.reference, args.clean)
         bins = np.linspace(min(df['ltot'].min(), df_b['ltot'].min()),
                            max(df['ltot'].max(), df_b['ltot'].max()),
                            100)
