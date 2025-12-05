@@ -8,6 +8,23 @@ from shosim.model import Parametrization1D, RWParametrization1D
 from shosim import media
 
 
+def legacy_eval(poly_coefs, knots, a, b, logE):
+    a_k, b_k, E_k = knots
+    a_i = np.searchsorted(a_k[3:-3], a, side='right')
+    b_i = np.searchsorted(b_k[3:-3], b, side='right')
+    E_i = np.searchsorted(E_k[3:-3], logE, side='right')
+
+    a_i -= (a_i > poly_coefs.shape[0]) # so that things don't break at the upper boundaries
+    b_i -= (b_i > poly_coefs.shape[1])
+    E_i -= (E_i > poly_coefs.shape[2])
+    Z = 0.
+    for l in range(4):
+        for m in range(4):
+            for n in range(4):
+                Z += poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
+    return Z
+
+
 if __name__=='__main__':
     logE = float(sys.argv[1])
     try:
@@ -53,28 +70,26 @@ if __name__=='__main__':
     plt.show()
 
     for pdg, B in curr.THETAS.items():
-        bsp = sp.interpolate.NdBSpline(B.bspl.t, B.bspl.c, 3)
-
-        Z0 = B(X, Y, logE)
-        Z1 = bsp(np.asarray([X, Y, np.ones_like(X)*logE]).T).T
+        Z0 = legacy_eval(B.poly_coefs, B.bspl.t, X, Y, logE)
+        Z1 = B(X, Y, logE)
 
         plt.figure()
-        plt.pcolormesh(X, Y, np.exp(Z0)-np.exp(Z1))
+        plt.pcolormesh(X, Y, (np.exp(Z0)-np.exp(Z1)) / np.exp(Z1))
         plt.colorbar()
         plt.xlim(0,1)
         plt.ylim(0,1)
         plt.xlabel("a'")
         plt.ylabel("b'")
-        plt.title(f"{pdg} exp(B)-exp(NdB)")
+        plt.title(f"{pdg} (exp(B)-exp(NdB)) / exp(NdB)")
 
         plt.figure()
-        plt.pcolormesh(X, Y, Z0-Z1)
+        plt.pcolormesh(X, Y, (Z0-Z1) / Z1)
         plt.colorbar()
         plt.xlim(0,1)
         plt.ylim(0,1)
         plt.xlabel("a'")
         plt.ylabel("b'")
-        plt.title(f"{pdg} B-NdB")
+        plt.title(f"{pdg} (B-NdB) / NdB")
     
         ap = np.arange(0., 1., 0.001)
         plt.figure()
