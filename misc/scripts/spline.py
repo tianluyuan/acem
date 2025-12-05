@@ -229,12 +229,9 @@ if __name__ == '__main__':
 
             if res[1] == 0:
                 print('        Saving coefficients')
-                ## Convert the coefficients to the polynomial basis (1,x,x**2,x**3,...)
-                ## Then save to "output_file"
-                ## Shift to convert into a density
-                # np.save(output_file, Bspl.poly_coefs)
                 outf = files("shosim") / "resources" / "theta" / f"{particle}.npz"
                 with as_file(outf) as fpath:
+                    # Shift to convert into a density with coeff_shift
                     # this notation is to match the NdBSpline
                     np.savez(fpath,
                              t0=knots[0],
