@@ -100,7 +100,7 @@ def fig3():
     plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
-    plt.ylim(0, 4)
+    plt.ylim(0, 4e-3)
     plt.legend()
     plt.savefig("fig/paper/fig3a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig3a.png", bbox_inches="tight")
@@ -149,22 +149,44 @@ def fig4():
     plabels = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Lambda^0"]
     pcolors = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2]]
     plinest = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-."]
+    fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=plt.gcf().get_size_inches())
     for i, particle in enumerate(particles):
         dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", loader=util.load_npy, clean=False)
         npeaks1 = np.asarray([(dats[_][:,507]==1).sum() for _ in dats])
         npeaks2 = np.asarray([(dats[_][:,507]==2).sum() for _ in dats])
         npeaksx = np.asarray([((dats[_][:, 507] != 1) & (dats[_][:, 507] != 2)).sum() for _ in dats])
 
+        plt.figure(1)
         plt.plot(dats.keys(), npeaks1/(npeaks1+npeaks2+npeaksx), c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
-        # plt.plot(dats.keys(), npeaks2)
-        # plt.plot(dats.keys(), npeaksx)
+
+        ltot = [dats[_][:, 501] for _ in dats]
+        apar = [dats[_][:, 502] for _ in dats]
+        bpar = [dats[_][:, 503] for _ in dats]
+        lva = [stats.spearmanr(_l, maths.aprime(_a)).statistic for _l, _a in zip(ltot, apar)]
+        lvb = [stats.spearmanr(_l, maths.bprime(_b)).statistic for _l, _b in zip(ltot, bpar)]
+        avb = [stats.spearmanr(maths.aprime(_a), maths.bprime(_b)).statistic for _a, _b in zip(apar, bpar)]
+
+        ax[0].plot(dats.keys(), lva, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
+        ax[1].plot(dats.keys(), lvb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
+        ax[2].plot(dats.keys(), avb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
+
+    plt.figure(1)
     plt.xscale("log")
     plt.xlabel("$E$ [GeV]")
     plt.ylabel("Proportion of showers with 1 peak")
     plt.ylim(ymax=1)
     plt.legend()
-    plt.savefig("fig/paper/fig4.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig4.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig4a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig4a.png", bbox_inches="tight")
+
+    ax[0].set_ylabel(rf"$\varrho({LTOT_LABEL}, a')$")
+    ax[1].set_ylabel(rf"$\varrho({LTOT_LABEL}, b')$")
+    ax[2].set_ylabel(r"$\varrho(a', b')$")
+    ax[2].set_xscale("log")
+    ax[2].set_xlabel("$E$ [GeV]")
+    [ax[_].set_ylim(-1, 1) for _ in range(3)]
+    fig.savefig("fig/paper/fig4b.pdf", bbox_inches="tight")
+    fig.savefig("fig/paper/fig4b.png", bbox_inches="tight")
 
 
 def fig5():
@@ -215,14 +237,14 @@ def fig5():
     plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
-    plt.ylim(0, 4)
+    plt.ylim(0, 4e-3)
     plt.legend()
     plt.savefig("fig/paper/fig5a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig5a.png", bbox_inches="tight")
 
     plt.clf()
-    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)")
-    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=colors[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)")
+    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)", markersize=1.5)
+    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=colors[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)", markersize=1.5)
     plt.xlabel(r"$a'$")
     plt.ylabel(r"$b'$")
     plt.xlim(0, 1)
@@ -233,7 +255,8 @@ def fig5():
 
 
 if __name__ == "__main__":
-    fig5()
     fig4()
+    fig5()
     fig3()
     fig2()
+    plt.close("all")
