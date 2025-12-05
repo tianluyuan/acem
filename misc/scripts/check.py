@@ -30,7 +30,7 @@ if __name__=='__main__':
     try:
         seed = int(sys.argv[2])
     except IndexError:
-        seed = 12
+        seed = None
     rng = np.random.default_rng(seed)
     curr = Parametrization1D(media.IC3)
     prev = RWParametrization1D(media.IC3)
@@ -49,8 +49,16 @@ if __name__=='__main__':
 
         cbar = plt.colorbar(plot, ax=plt.gca(), label='PDF')
 
-        plt.plot(*curr.THETAS[pdg].sample(logE,40,random_state=rng).T, 'k.', label='Rejection sampling')
-        plt.plot(*curr.THETAS[pdg]._legacy_sample(logE,40, num_quad_nodes=10, random_state=rng).T, 'r.', label='Binary sampling')
+        plt.plot(*curr.THETAS[pdg].sample(logE,40,random_state=rng).T,
+                 'k.',
+                 label='samples (via rejection)',
+                 markersize=1.5)
+        # plt.plot(*curr.THETAS[pdg]._legacy_sample(logE,40, num_quad_nodes=10, random_state=rng).T,
+        #          'r.',
+        #          label='Binary sampling',
+        #          markersize=1.5)
+        plt.plot(*curr.THETAS[pdg].mode(logE), 'r*', label='mode')
+        plt.plot(*curr.THETAS[pdg].mean(logE), 'b*', label='mean')
         plt.legend()
         plt.title(f"{pdg}")
         plt.xlabel("a'")

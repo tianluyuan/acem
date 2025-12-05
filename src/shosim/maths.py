@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import itertools
+from functools import cached_property
 import numpy as np
 import numpy.typing as npt
 from numpy.random import Generator
@@ -59,7 +60,7 @@ class BSpline3D:
         assert len(self.bspl.t) == 3
         assert self.bspl.c.ndim == 3
         
-    @property
+    @cached_property
     def c_poly(self) -> np.ndarray: 
         """
         Returns
@@ -139,7 +140,7 @@ class BSpline3D:
     def __call__(self,
                  aprime: float | npt.ArrayLike,
                  bprime: float | npt.ArrayLike,
-                 logE: float | npt.ArrayLike) -> float:
+                 logE: float | npt.ArrayLike) -> np.ndarray:
         """
         Parameters
         ----------
@@ -150,6 +151,10 @@ class BSpline3D:
         Returns
         -------
         ndarray: Result of evaluating BSpline at the provided a,b,logE values
+
+        Notes
+        -----
+        The return values correspond to ln(pdf(a', b'| logE))
         """
         A, B, LogE = np.broadcast_arrays(aprime, bprime, logE)
         return self.bspl(np.asarray([A, B, LogE]).T).T
@@ -233,7 +238,7 @@ class BSpline3D:
     def sample(self,
                logE: float,
                size: None | int=None,
-               random_state: None | Generator=None) -> tuple | np.ndarray:
+               random_state: None | Generator=None) -> np.ndarray:
         """
         Samples (a', b') for given log10E via rejection sampling
 
@@ -251,17 +256,33 @@ class BSpline3D:
             random_state = np.random.default_rng()
         
         ap, bp = self.mode(logE)
-        f_max = self.__call__(ap, bp, logE)
+        f_max = np.exp(self.__call__(ap, bp, logE))
         samples = []
         _size = 1 if size is None else size
-        while len(samples) < _size:
-            x_star = random_state.uniform()
-            y_star = random_state.uniform()
-            z_star = random_state.uniform(0., f_max)
-            if z_star <= self.__call__(x_star, y_star, logE):
-                samples.append((x_star, y_star))
-            
-        return samples[0] if size is None else np.asarray(samples)
+        current_count = 0
+
+        # Heuristic: We generate more points than needed (oversampling) 
+        # to account for rejections. Adjust 'factor' based on acceptance rate.
+        # A factor of 2-3 works for dense distributions, 10 for sparse
+        oversample_factor = 5
+
+        while current_count < _size:
+            n_remaining = _size - current_count
+            batch_size = max(n_remaining * oversample_factor, 100)
+
+            x_stars = random_state.uniform(size=batch_size)
+            y_stars = random_state.uniform(size=batch_size)
+            z_stars = random_state.uniform(0., f_max, size=batch_size)
+
+            mask = z_stars <= np.exp(self.__call__(x_stars, y_stars, logE))
+
+            batch_samples = np.column_stack((x_stars[mask], y_stars[mask]))
+
+            samples.append(batch_samples)
+            current_count += len(batch_samples)
+
+        result = np.vstack(samples)[:_size]
+        return result[0] if size is None else result
 
     def _legacy_sample(self,
                        logE: float,
@@ -269,7 +290,7 @@ class BSpline3D:
                        random_state: None | Generator=None,
                        sample_depth: int=7,
                        binning_offset: bool=True,
-                       num_quad_nodes: int=7) -> tuple | np.ndarray:
+                       num_quad_nodes: int=7) -> np.ndarray:
         """
         Samples (a', b') for given log10E via binary split algorithm.
 
@@ -288,11 +309,6 @@ class BSpline3D:
         Returns
         -------
         ndarray of sampled np.array([(a', b')_0, ...])
-
-        Notes
-        -----
-        The resulting sample does not seem to exactly match rejection sampling,
-        but is kept for historical purposes.
         """
         if random_state is None:
             random_state = np.random.default_rng()
