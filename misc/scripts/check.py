@@ -8,20 +8,20 @@ from shosim.model import Parametrization1D, RWParametrization1D
 from shosim import media
 
 
-def legacy_eval(poly_coefs, knots, a, b, logE):
+def legacy_eval(c_poly, knots, a, b, logE):
     a_k, b_k, E_k = knots
     a_i = np.searchsorted(a_k[3:-3], a, side='right')
     b_i = np.searchsorted(b_k[3:-3], b, side='right')
     E_i = np.searchsorted(E_k[3:-3], logE, side='right')
 
-    a_i -= (a_i > poly_coefs.shape[0]) # so that things don't break at the upper boundaries
-    b_i -= (b_i > poly_coefs.shape[1])
-    E_i -= (E_i > poly_coefs.shape[2])
+    a_i -= (a_i > c_poly.shape[0]) # so that things don't break at the upper boundaries
+    b_i -= (b_i > c_poly.shape[1])
+    E_i -= (E_i > c_poly.shape[2])
     Z = 0.
     for l in range(4):
         for m in range(4):
             for n in range(4):
-                Z += poly_coefs[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
+                Z += c_poly[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
     return Z
 
 
@@ -70,7 +70,7 @@ if __name__=='__main__':
     plt.show()
 
     for pdg, B in curr.THETAS.items():
-        Z0 = legacy_eval(B.poly_coefs, B.bspl.t, X, Y, logE)
+        Z0 = legacy_eval(B.c_poly, B.bspl.t, X, Y, logE)
         Z1 = B(X, Y, logE)
 
         plt.figure()

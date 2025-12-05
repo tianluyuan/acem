@@ -5,7 +5,7 @@ from typing import Callable, Dict, NamedTuple, List
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
-from scipy import stats
+from scipy import stats, interpolate
 from scipy.stats._distn_infrastructure import rv_frozen
 from . import media
 from .pdg import FLUKA2PDG
@@ -198,7 +198,7 @@ class Parametrization1D(ModelBase):
                 c = theta["c"]
                 t = tuple(theta[f"t{_}"] for _ in range(c.ndim))
                 k = theta["k"]
-                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline3D.create(t, c, k)
+                data[FLUKA2PDG[Path(entry.name).stem]] = BSpline3D(interpolate.NdBSpline(t, c, k, extrapolate=False))
         return data
 
     LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
