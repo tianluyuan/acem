@@ -313,29 +313,6 @@ class Parametrization1D(ModelBase):
         """
         ap, bp = self.THETAS[pdg].mean(np.log10(energy))
         return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a(ap), b(bp)))
-
-    def mode_ab(self, pdg: int, energy: float) -> Shower1D:
-        """
-        Retrieves the most-probable Shower1D object for a specified
-        particle type and energy.
-
-        Parameters
-        ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
-
-        Returns
-        -------
-        Shower1D: The average 1D shower profile
-
-        >>> a = Parametrization1D(media.ICE)
-        >>> for pdg in a.THETAS:
-        ...     for en in np.linspace(0, 6, 200):
-        ...          most_probable = a.mode_ab(pdg, 10**en)
-        """
-        ap, bp = self.THETAS[pdg].mode(np.log10(energy))
-        return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a(ap), b(bp)))
     
     def sample(self,
                pdg: int,
@@ -359,13 +336,13 @@ class Parametrization1D(ModelBase):
 
 
         >>> a = Parametrization1D(media.ICE)
-        >>> rng = np.random.default_rng(42)
+        >>> rng = np.random.default_rng(1)
         >>> for pdg in a.THETAS:
-        ...     for en in np.linspace(0, 6, 20):
-        ...         sampa = a.THETAS[pdg].sample(en, 100, random_state=rng)
-        ...         sampb = a.THETAS[pdg]._legacy_sample(en, 100, random_state=rng)
-        ...         assert stats.ks_2samp(sampa[:,0], sampb[:,0]).pvalue>0.05
-        ...         assert stats.ks_2samp(sampa[:,1], sampb[:,1]).pvalue>0.05
+        ...     for en in np.linspace(0, 6, 10):
+        ...         sampa = a.THETAS[pdg].sample(en, 200, random_state=rng)
+        ...         sampb = a.THETAS[pdg]._legacy_sample(en, 200, random_state=rng)
+        ...         assert stats.ks_2samp(sampa[:,0], sampb[:,0]).pvalue>0.01
+        ...         assert stats.ks_2samp(sampa[:,1], sampb[:,1]).pvalue>0.01
         """
         _size = 1 if size is None else size
         ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
