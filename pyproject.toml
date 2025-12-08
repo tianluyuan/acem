@@ -25,7 +25,7 @@ dependencies = [
 
 classifiers = [
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
+  # "License :: OSI Approved :: MIT License",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
   "Topic :: Scientific/Engineering",
@@ -36,7 +36,7 @@ misc = ["matplotlib>=3.2", "pandas"]
 test = ["pytest"]
 
 [project.urls]
-Repository = "https://github.com/ianRCrawshaw/Shower-Simulations/"
+Repository = "https://github.com/tianluyuan/shosim"
 
 [tool.setuptools.packages.find]
 where = ["src/"]
