@@ -3,6 +3,11 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 from typing import Dict, Callable, TypeVar
+try:
+    import pandas as pd
+    HAVE_PANDAS = True
+except ImportError:
+    HAVE_PANDAS = False
 
 
 def format_energy(num: float) -> str:
@@ -29,6 +34,10 @@ def load_npy(fpath: str | Path, clean: bool=True) -> np.ndarray:
 
 
 def load_csv(fpath: str | Path, clean: bool=True) -> pd.DataFrame | pd.Series:
+    if not HAVE_PANDAS:
+        raise RuntimeError(
+            "The 'load_csv' function requires the 'pandas' package to be installed."
+        )
     # probe number of zbins
     _a = load_npy(fpath, clean)
     nzbins = int(_a[0, -6])
@@ -43,10 +52,11 @@ def load_csv(fpath: str | Path, clean: bool=True) -> pd.DataFrame | pd.Series:
     # END
     if not clean:
         return df
-    
+
     df.dropna(subset='gammaA', inplace=True)
     lo, hi = np.quantile(df['ltot'], [0.005, 1.0])
     return df[(df['ltot'] >= lo) & (df['ltot'] <= hi)]
+
 
 T = TypeVar('T')
 def load_batch(pattern: str,
