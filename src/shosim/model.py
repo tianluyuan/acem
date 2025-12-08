@@ -19,6 +19,7 @@ def ltot_scale(m0: media.Medium, m1: media.Medium):
 class Shower1D(NamedTuple):
     """
     A one-dimensional representation of the Cherenkov-weighted track lengths of a particle shower, along the shower axis.
+    This class is a simple container to represent the amplitude and shape of the shower profile.
 
     Parameters
     ----------
@@ -173,8 +174,12 @@ class RWParametrization1D(ModelBase):
 
 class Parametrization1D(ModelBase):
     """
-    Generates shower profiles for Cherenkov light yields, given a media.Medium. Includes fluctuations in shape and nuclear effects for total light yield.
+    Generates shower profiles for Cherenkov light yields, given a media.Medium.
+    Includes fluctuations in shape and nuclear effects for total light yield.
 
+    Handles the loading of parameters that govern the amplitude and shape distributions,
+    while exposing convenience functions to sample / obtain Shower1D objects.
+    
     Based on: TBD
     """
     @staticmethod

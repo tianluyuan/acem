@@ -15,7 +15,7 @@ smoothness = [0.1, 0.1, 0.01] # degree of smoothing along each dimension [a,b,E]
 # c_E = 6 # Number of basis splines along E-dimension
 c_a = 17 # Number of basis splines along a-dimension
 c_b = 17 # Number of basis splines along b-dimension
-c_E = 8 # Number of basis splines along E-dimension
+c_E = 9 # Number of basis splines along E-dimension
 n_a = 450 # Number of histogram bins along a-dimension
 n_b = 450 # Number of histogram bins along b-dimension
 deg = 3 # degree of the BSpline
@@ -155,7 +155,7 @@ if __name__ == '__main__':
         The value of the coefficients in the spline basis will be saved to "theta"
         '''
         if perform_likelihood_test:
-            test_sample = np.zeros([test_sample_size,2,51])
+            test_sample = np.zeros([test_sample_size,2,len(energies)])
             for index, energy in enumerate(energies):
                 samp = Dat[energy].sample(n = test_sample_size)
                 test_sample[:,0,index] = ga(samp.gammaA)
