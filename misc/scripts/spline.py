@@ -4,9 +4,8 @@ import scipy as sc
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import argparse
+from shosim import maths, util
 from importlib.resources import files, as_file
-from shosim import maths
-from . import util
 
 ### Fit Parameters
 dif_orders = [3, 3, 3] # order of difference to penalize for smoothing [a,b,E]

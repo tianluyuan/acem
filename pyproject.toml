@@ -32,7 +32,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-misc = ["matplotlib>=3.2", "pandas"]
+plot = ["matplotlib>=3.2"]
 test = ["pytest"]
 
 [project.urls]

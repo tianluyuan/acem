@@ -3,8 +3,7 @@ import numpy as np
 from scipy import stats
 from matplotlib import pyplot as plt
 
-from shosim import model, maths
-from . import util
+from shosim import model, util, maths
 
 plt.style.use("paper-sans")
 prop_cycle = plt.rcParams["axes.prop_cycle"]
