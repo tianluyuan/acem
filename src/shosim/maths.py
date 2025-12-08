@@ -93,9 +93,9 @@ class BSpline3D:
         for i in range(self.bspl.c.shape[2]):
             for j in range(4):
                 BSplinePieces_E[i,j,:] = self._BSplinePiece(j,E_k[0],D_E,i)
-        for q, r, s, l, m, n in itertools.product(*[range(4)]*6):
-            c_poly[:,:,:,q,r,s] += self.bspl.c[l:c_poly.shape[0]+l,m:c_poly.shape[1]+m,n:c_poly.shape[2]+n] \
-                * np.tile(BSplinePieces_a[l:c_poly.shape[0]+l,3-l,q].reshape((c_poly.shape[0],1,1)),(1,c_poly.shape[1],c_poly.shape[2])) \
+        for q, r, s, k, m, n in itertools.product(*[range(4)]*6):
+            c_poly[:,:,:,q,r,s] += self.bspl.c[k:c_poly.shape[0]+k,m:c_poly.shape[1]+m,n:c_poly.shape[2]+n] \
+                * np.tile(BSplinePieces_a[k:c_poly.shape[0]+k,3-k,q].reshape((c_poly.shape[0],1,1)),(1,c_poly.shape[1],c_poly.shape[2])) \
                 * np.tile(BSplinePieces_b[m:c_poly.shape[1]+m,3-m,r].reshape((1,c_poly.shape[1],1)),(c_poly.shape[0],1,c_poly.shape[2])) \
                 * np.tile(BSplinePieces_E[n:c_poly.shape[2]+n,3-n,s].reshape((1,1,c_poly.shape[2])),(c_poly.shape[0],c_poly.shape[1],1))
         return c_poly
@@ -227,9 +227,9 @@ class BSpline3D:
 
         X_quad = nodes_array * (h_a - l_a) / 2 + (l_a + h_a) / 2
         Y_quad = nodesT_array * (h_b - l_b) / 2 + (l_b + h_b) / 2
-        for l, m, n in itertools.product(*[range(4)]*3):
-            Z += np.tile(self.c_poly[:,:,E_i-1,l,m,n].reshape((self.c_poly.shape[0],self.c_poly.shape[1],1,1)),(1,1,num_quad_nodes,num_quad_nodes)) \
-                * X_quad**l * Y_quad**m * logE**n
+        for k, m, n in itertools.product(*[range(4)]*3):
+            Z += np.tile(self.c_poly[:,:,E_i-1,k,m,n].reshape((self.c_poly.shape[0],self.c_poly.shape[1],1,1)),(1,1,num_quad_nodes,num_quad_nodes)) \
+                * X_quad**k * Y_quad**m * logE**n
 
         alpha, beta = moment
         moment_kernel = (X_quad**alpha) * (Y_quad**beta)
@@ -318,10 +318,10 @@ class BSpline3D:
             nodes_ = nodes_1d.reshape(1, num_quad_nodes, 1)
             nodesT_ = nodes_1d.reshape(1, 1, num_quad_nodes)
             Z = np.zeros([Coefs_abE.shape[0], num_quad_nodes, num_quad_nodes])
-            for l in range(4):
+            for k in range(4):
                 for m in range(4):
-                    Z += Coefs_abE[:, :, :, l, m] * \
-                                np.tile((nodes_*(h_a-l_a)/2 + (l_a+h_a)/2)**l, (1, 1, num_quad_nodes)) * \
+                    Z += Coefs_abE[:, :, :, k, m] * \
+                                np.tile((nodes_*(h_a-l_a)/2 + (l_a+h_a)/2)**k, (1, 1, num_quad_nodes)) * \
                                 np.tile((nodesT_*(h_b-l_b)/2 + (l_b+h_b)/2)**m, (1, num_quad_nodes, 1))
             return np.sum(np.exp(Z) * weights.reshape(1, num_quad_nodes, num_quad_nodes), axis=(-2, -1), keepdims=True) * (h_a-l_a)*(h_b-l_b)/4
         E_i = np.searchsorted(E_k[3:-3], logE, side="right")
@@ -342,10 +342,10 @@ class BSpline3D:
         l_b = np.tile(b_k[3:-4].reshape(1, -1, 1, 1), (CoefsE.shape[0], 1, num_quad_nodes, num_quad_nodes))
         h_b = np.tile(b_k[4:-3].reshape(1, -1, 1, 1), (CoefsE.shape[0], 1, num_quad_nodes, num_quad_nodes))
 
-        for l in range(4):
+        for k in range(4):
             for m in range(4):
-                Z += np.tile(CoefsE[:, :, l, m].reshape(CoefsE.shape[0], CoefsE.shape[1], 1, 1), (1, 1, num_quad_nodes, num_quad_nodes)) \
-                        * (nodes_array*(h_a-l_a)/2 + (l_a+h_a)/2)**l * (nodesT_array*(h_b-l_b)/2 + (l_b+h_b)/2)**m
+                Z += np.tile(CoefsE[:, :, k, m].reshape(CoefsE.shape[0], CoefsE.shape[1], 1, 1), (1, 1, num_quad_nodes, num_quad_nodes)) \
+                        * (nodes_array*(h_a-l_a)/2 + (l_a+h_a)/2)**k * (nodesT_array*(h_b-l_b)/2 + (l_b+h_b)/2)**m
         integrated_grid = np.sum(np.exp(Z) * weights * (a_k[1]-a_k[0])*(b_k[1]-b_k[0])/4, axis=(2, 3))
 
         ranges = np.insert(integrated_grid.reshape(-1).cumsum(), 0, 0)
