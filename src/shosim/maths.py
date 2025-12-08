@@ -199,6 +199,12 @@ class BSpline3D:
         """
         mini = minimize(lambda x: -self.bspl((x[0], x[1], logE)), [0.5, 0.5],
                         method='Nelder-Mead', bounds=[(0., 1.), (0., 1.)])
+        for seed in [[0.99, 0.99],[0.01, 0.01]]:
+            _mini = minimize(lambda x: -self.bspl((x[0], x[1], logE)), seed,
+                             method='Nelder-Mead', bounds=[(0., 1.), (0., 1.)])
+            if _mini.fun < mini.fun:
+                mini = _mini
+
         if not mini.success:
             raise RuntimeError(f"Minimization failure in mode search; {mini.message}")
         return mini.x[0], mini.x[1]
