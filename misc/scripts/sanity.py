@@ -4,7 +4,8 @@ from matplotlib import pyplot as plt
 from scipy import stats
 import argparse
 from pathlib import Path
-from shosim import util, media
+from shosim import media
+from . import util
 plt.style.use('present')
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']

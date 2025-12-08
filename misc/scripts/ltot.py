@@ -4,8 +4,8 @@ from scipy import stats, optimize
 from matplotlib import pyplot as plt
 import argparse
 from importlib.resources import files, as_file
-from shosim.util import load_batch
 from shosim.maths import qrt, cbc, lin
+from .util import load_batch
 plt.style.use('present')
 
 
