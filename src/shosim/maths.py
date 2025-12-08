@@ -26,6 +26,10 @@ def lin(x, t0, t1):
 def aprime(a):
     """
     Function to transform a into range (0,1)
+
+    >>> a = np.logspace(0., 6., 100)
+    >>> np.all(aprime(a) <= 1.) and np.all(0. < aprime(a))
+    np.True_
     """
     return 1./np.sqrt(a)
 
@@ -33,6 +37,10 @@ def aprime(a):
 def bprime(b):
     """
     Function to transform b into range (0,1)
+
+    >>> b = np.linspace(0.00, 100., 1000)
+    >>> np.all(bprime(b) <= 1.) and np.all(0. < bprime(b))
+    np.True_
     """
     return 1./(1.+b**2)
 
@@ -40,6 +48,10 @@ def bprime(b):
 def a(aprime):
     """
     Function to transform a' with domain (0,1) back to a
+
+    >>> x = np.linspace(1.00, 100., 1000)
+    >>> np.all(np.abs(a(aprime(x)) - x) < 1e-8)
+    np.True_
     """
     return 1./aprime**2
 
@@ -47,6 +59,10 @@ def a(aprime):
 def b(bprime):
     """
     Function to transform b' with domain (0,1) back to b
+
+    >>> x = np.linspace(0.00, 100., 1000)
+    >>> np.all(np.abs(b(bprime(x)) - x) < 1e-8)
+    np.True_
     """
     return np.sqrt(1./bprime-1.)
 

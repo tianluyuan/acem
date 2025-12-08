@@ -323,6 +323,12 @@ class Parametrization1D(ModelBase):
         Returns
         -------
         Shower1D: The average 1D shower profile
+
+        >>> a = Parametrization1D(media.ICE)
+        >>> rng = np.random.default_rng(42)
+        >>> for pdg in a.THETAS:
+        ...     for en in np.linspace(1, 6, 20):
+        ...          most_probable = a.mode_ab(pdg, 10**en)
         """
         ap, bp = self.THETAS[pdg].mode(np.log10(energy))
         return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a(ap), b(bp)))
@@ -348,7 +354,7 @@ class Parametrization1D(ModelBase):
         Shower1D samples (see size above)
 
 
-        >>> a = Parametrization1D(media.IC3)
+        >>> a = Parametrization1D(media.ICE)
         >>> rng = np.random.default_rng(42)
         >>> for pdg in a.THETAS:
         ...     for en in np.linspace(1, 6, 20):
