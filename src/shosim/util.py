@@ -32,7 +32,7 @@ def load_npy(fpath: str | Path, clean: bool=True) -> np.ndarray:
     return a[~np.isnan(a[:, nzbins+2]) & (a[:, nzbins+1] >= lo) & (a[:, nzbins+1] <= hi)]
 
 
-def load_csv(fpath: str | Path, clean: bool=True) -> pd.DataFrame | pd.Series:
+def load_csv(fpath: str | Path, clean: bool=True) -> 'pd.DataFrame | pd.Series':
     if not HAVE_PANDAS:
         raise RuntimeError(
             "The 'load_csv' function requires the 'pandas' package to be installed."
