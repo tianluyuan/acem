@@ -330,9 +330,8 @@ class Parametrization1D(ModelBase):
         Shower1D: The average 1D shower profile
 
         >>> a = Parametrization1D(media.ICE)
-        >>> rng = np.random.default_rng(42)
         >>> for pdg in a.THETAS:
-        ...     for en in np.linspace(1, 6, 20):
+        ...     for en in np.linspace(0, 6, 200):
         ...          most_probable = a.mode_ab(pdg, 10**en)
         """
         ap, bp = self.THETAS[pdg].mode(np.log10(energy))
@@ -362,7 +361,7 @@ class Parametrization1D(ModelBase):
         >>> a = Parametrization1D(media.ICE)
         >>> rng = np.random.default_rng(42)
         >>> for pdg in a.THETAS:
-        ...     for en in np.linspace(1, 6, 20):
+        ...     for en in np.linspace(0, 6, 20):
         ...         sampa = a.THETAS[pdg].sample(en, 100, random_state=rng)
         ...         sampb = a.THETAS[pdg]._legacy_sample(en, 100, random_state=rng)
         ...         assert stats.ks_2samp(sampa[:,0], sampb[:,0]).pvalue>0.05

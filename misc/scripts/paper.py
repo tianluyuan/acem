@@ -145,19 +145,19 @@ def fig3():
 
 def fig4():
     plt.clf()
-    particles = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "LAMBDA"]
-    plabels = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Lambda^0"]
-    pcolors = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2]]
-    plinest = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-."]
+    particles = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "SIGMA+", "SIGMA-", "LAMBDA", "XSIZERO", "XSI-", "OMEGA-"]
+    plabels = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
+    pcolors = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2], colors[3], colors[3], colors[3], colors[3]]
+    plinest = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-.", "-", "--", ":", "-."]
     fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=plt.gcf().get_size_inches())
     for i, particle in enumerate(particles):
         dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", loader=util.load_npy, clean=False)
         npeaks1 = np.asarray([(dats[_][:,507]==1).sum() for _ in dats])
         npeaks2 = np.asarray([(dats[_][:,507]==2).sum() for _ in dats])
         npeaksx = np.asarray([((dats[_][:, 507] != 1) & (dats[_][:, 507] != 2)).sum() for _ in dats])
-
+        
         plt.figure(1)
-        plt.plot(dats.keys(), npeaks1/(npeaks1+npeaks2+npeaksx), c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
+        plt.plot(dats.keys(), npeaks1/(npeaks1+npeaks2+npeaksx), c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
 
         lva = []
         lvb = []
@@ -168,24 +168,25 @@ def fig4():
             ltot_col = data_array[:, 501]
             apri_col = maths.aprime(data_array[:, 502])
             bpri_col = maths.aprime(data_array[:, 503])
+            mask = ~(np.isnan(apri_col) & np.isnan(bpri_col))
 
-            stacked_data = np.stack((ltot_col, apri_col, bpri_col), axis=1)
+            stacked_data = np.stack((ltot_col[mask], apri_col[mask], bpri_col[mask]), axis=1)
             rho_matrix = stats.spearmanr(stacked_data).statistic
 
             lva.append(rho_matrix[0, 1]) 
             lvb.append(rho_matrix[0, 2])
             avb.append(rho_matrix[1, 2])
 
-        ax[0].plot(dats.keys(), lva, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
-        ax[1].plot(dats.keys(), lvb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
-        ax[2].plot(dats.keys(), avb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i])
+        ax[0].plot(dats.keys(), lva, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
+        ax[1].plot(dats.keys(), lvb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
+        ax[2].plot(dats.keys(), avb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
 
     plt.figure(1)
     plt.xscale("log")
     plt.xlabel("$E$ [GeV]")
     plt.ylabel("Proportion of showers with 1 peak")
     plt.ylim(ymax=1)
-    plt.legend()
+    plt.legend(ncol=2)
     plt.savefig("fig/paper/fig4a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig4a.png", bbox_inches="tight")
 
@@ -265,8 +266,8 @@ def fig5():
 
 
 if __name__ == "__main__":
-    fig4()
     fig5()
+    fig4()
     fig3()
     fig2()
     plt.close("all")
