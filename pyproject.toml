@@ -32,7 +32,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-plotting = ["matplotlib>=3.2"]
+plot = ["matplotlib>=3.2"]
+test = ["pytest"]
 
 [project.urls]
 Repository = "https://github.com/ianRCrawshaw/Shower-Simulations/"
