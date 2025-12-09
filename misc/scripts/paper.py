@@ -272,7 +272,7 @@ def fig5():
     enes = [1e1, 1e3, 1e6]
     labs = [r"10 GeV $\pi^+$", r"1 TeV $\pi^+$", r"1 PeV $\pi^+$"]
     bspl = model.Parametrization1D.THETAS[pdg.FLUKA2PDG[_part]]
-    vmax = np.exp(np.median([bspl(*bspl.mode(np.log10(ene)), np.log10(ene)) for ene in enes]))*1.5
+    vmax = 50 #np.exp(np.median([bspl(*bspl.mode(np.log10(ene)), np.log10(ene)) for ene in enes]))*1.5
 
     _wide, _height = plt.gcf().get_size_inches()
     fig, ax = plt.subplots(nrows=2, ncols=3, sharey=True, figsize=(_wide*3.1, _height*2))
@@ -307,9 +307,8 @@ def fig5():
             horizontalalignment='right', # Text flows left from the point
             color='white'
         )
-    ax[0][0].set_ylabel(r"$b'$")
-    ax[1][0].set_ylabel(r"$b'$")
-    ax[1][1].set_xlabel(r"$a'$")
+    fig.supylabel(r"$b'$", x=0.065)
+    fig.supxlabel(r"$a'$", y=0.02)
     cbar_ax_position = [0.92, 0.15, 0.01, 0.7] # 0.92 is far right, 0.01 is thin width
     cax = fig.add_axes(cbar_ax_position)
     cbar = fig.colorbar(im,
