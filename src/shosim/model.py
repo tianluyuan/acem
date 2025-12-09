@@ -345,8 +345,8 @@ class Parametrization1D(ModelBase):
         ...     for en in np.linspace(1, 6, 10):
         ...         samp = a.THETAS[pdg].sample(en, 100, random_state=rng)
         ...         lsam = a.THETAS[pdg]._legacy_sample(en, 200, random_state=rng)
-        ...         assert stats.ks_2samp(samp[:,0], lsam[:,0]).pvalue>0.001
-        ...         assert stats.ks_2samp(samp[:,1], lsam[:,1]).pvalue>0.001
+        ...         assert stats.ks_2samp(samp[:,0], lsam[:,0]).pvalue>0.01
+        ...         assert stats.ks_2samp(samp[:,1], lsam[:,1]).pvalue>0.005
         """
         _size = 1 if size is None else size
         ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
