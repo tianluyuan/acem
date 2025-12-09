@@ -9,7 +9,7 @@ from scipy import stats, interpolate
 from scipy.stats._distn_infrastructure import rv_frozen
 from . import media
 from .pdg import FLUKA2PDG
-from .maths import efn, lin, cbc, qrt, a, b, BSpline3D
+from .maths import efn, lin, cbc, qrt, qnt, sxt, a, b, BSpline3D
 
 
 def ltot_scale(m0: media.Medium, m1: media.Medium):
@@ -282,6 +282,10 @@ class Parametrization1D(ModelBase):
                 _fn = cbc
             elif len(_p) == 5:
                 _fn = qrt
+            elif len(_p) == 6:
+                _fn = qnt
+            elif len(_p) == 7:
+                _fn = sxt
             else:
                 raise RuntimeError('Unable to match parameters to function')
             sdist_args.append(sgn * efn(energy, _fn, *_p))

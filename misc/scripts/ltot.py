@@ -9,10 +9,6 @@ from shosim.maths import qrt, cbc, lin
 plt.style.use('present')
 
 
-log_ens = np.linspace(1,6,51) # log (base 10) of the energy values used for fitting
-n_E = len(log_ens) # Number of energy levels used for fitting
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Fitting script')
     parser.add_argument('particles', nargs='+')
@@ -56,6 +52,8 @@ if __name__ == '__main__':
 
         Dat = load_batch(f'fluka/DataOutputs_{particle}/*.csv', clean=clean)
         ens = list(Dat.keys())
+        log_ens = np.log10(ens)
+        n_E = len(log_ens)
         results = []
 
         for i in range(n_E):

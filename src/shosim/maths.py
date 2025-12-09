@@ -11,12 +11,20 @@ def efn(en, fn, *args):
     return np.exp(fn(np.log10(en), *args))
 
 
+def sxt(x, t0, t1, t2, t3, t4, t5, t6):
+    return t6*x**6 + qnt(x, t0, t1, t2, t3, t4, t5)
+
+
+def qnt(x, t0, t1, t2, t3, t4, t5):
+    return t5*x**5 + qrt(x, t0, t1, t2, t3, t4)
+
+
 def qrt(x, t0, t1, t2, t3, t4):
-    return t4*x**4 + t3*x**3 + t2*x**2 + t1*x + t0
+    return t4*x**4 + cbc(x, t0, t1, t2, t3)
 
 
 def cbc(x, t0, t1, t2, t3):
-    return t3*x**3 + t2*x**2 + t1*x + t0
+    return t3*x**3 + t2*x**2 + lin(x, t0, t1)
 
 
 def lin(x, t0, t1):
