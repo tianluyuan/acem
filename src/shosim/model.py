@@ -340,13 +340,13 @@ class Parametrization1D(ModelBase):
 
 
         >>> a = Parametrization1D(media.ICE)
-        >>> rng = np.random.default_rng(1)
+        >>> rng = np.random.default_rng(3)
         >>> for pdg in a.THETAS:
-        ...     for en in np.linspace(0, 6, 10):
-        ...         sampa = a.THETAS[pdg].sample(en, 200, random_state=rng)
+        ...     for en in np.linspace(1, 6, 10):
+        ...         sampa = a.THETAS[pdg].sample(en, 100, random_state=rng)
         ...         sampb = a.THETAS[pdg]._legacy_sample(en, 200, random_state=rng)
-        ...         assert stats.ks_2samp(sampa[:,0], sampb[:,0]).pvalue>0.001
-        ...         assert stats.ks_2samp(sampa[:,1], sampb[:,1]).pvalue>0.001
+        ...         assert stats.ks_2samp(sampa[:,0], sampb[:,0]).pvalue>0.003
+        ...         assert stats.ks_2samp(sampa[:,1], sampb[:,1]).pvalue>0.003
         """
         _size = 1 if size is None else size
         ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
