@@ -29,7 +29,7 @@ def fig2():
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
-             label=r"1 TeV $e^-$ (RW 2013)", linestyle="--")
+             label=r"1 TeV $e^-$\n(RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
