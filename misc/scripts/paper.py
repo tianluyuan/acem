@@ -3,7 +3,7 @@ import numpy as np
 from scipy import stats
 from matplotlib import pyplot as plt
 
-from shosim import model, util, maths
+from shosim import model, util, maths, pdg
 
 plt.style.use("paper-sans")
 prop_cycle = plt.rcParams["axes.prop_cycle"]
@@ -265,9 +265,66 @@ def fig4():
     plt.savefig("fig/paper/fig4b.png", bbox_inches="tight")
 
 
+def fig5():
+    from spline import bins_a, bins_b, ga, gb
+
+    _part = "PION+"
+    enes = [1e1, 1e3, 1e6]
+    labs = [r"10 GeV $\pi^+$", r"1 TeV $\pi^+$", r"1 PeV $\pi^+$"]
+    bspl = model.Parametrization1D.THETAS[pdg.FLUKA2PDG[_part]]
+    vmax = np.exp(np.median([bspl(*bspl.mode(np.log10(ene)), np.log10(ene)) for ene in enes]))*1.5
+
+    _wide, _height = plt.gcf().get_size_inches()
+    fig, ax = plt.subplots(nrows=2, ncols=3, sharey=True, figsize=(_wide*3.1, _height*2))
+    for i, (ene, lab) in enumerate(zip(enes, labs)):
+        df = util.load_csv(f"fluka/DataOutputs_{_part}/{_part}_{util.format_energy(ene)}.csv", False)
+        avals = ga(df.gammaA)
+        bvals = gb(df.gammaB)
+        ax[0][i].hist2d(avals,bvals,bins=(bins_a,bins_b),cmap="plasma", density=True,
+                        vmin=0, vmax=vmax)
+                     # norm=colors.LogNorm())
+        ax[0][i].text(
+            0.96,  # Slight offset from the right edge (1.0 is the exact edge)
+            0.04,  # Slight offset from the bottom edge (0.0 is the exact bottom)
+            f"{lab} (MC)",
+            transform=ax[0][i].transAxes,  # Use Axes coordinates (0 to 1)
+            fontsize=18,
+            verticalalignment='bottom', # Text goes up from the baseline
+            horizontalalignment='right', # Text flows left from the point
+            color='white'
+        )
+    X, Y = np.meshgrid(bins_a, bins_b)
+    for i, (ene, lab) in enumerate(zip(enes, labs)):
+        Z= bspl(X, Y, np.log10(ene))
+        im = ax[1][i].pcolormesh(X, Y, np.exp(Z), cmap='plasma', shading='auto', vmin=0, vmax=vmax)
+        ax[1][i].text(
+            0.96,  # Slight offset from the right edge (1.0 is the exact edge)
+            0.04,  # Slight offset from the bottom edge (0.0 is the exact bottom)
+            f"{lab} (model)",
+            transform=ax[1][i].transAxes,  # Use Axes coordinates (0 to 1)
+            fontsize=18,
+            verticalalignment='bottom', # Text goes up from the baseline
+            horizontalalignment='right', # Text flows left from the point
+            color='white'
+        )
+    ax[0][0].set_ylabel(r"$b'$")
+    ax[1][0].set_ylabel(r"$b'$")
+    ax[1][1].set_xlabel(r"$a'$")
+    cbar_ax_position = [0.92, 0.15, 0.01, 0.7] # 0.92 is far right, 0.01 is thin width
+    cax = fig.add_axes(cbar_ax_position)
+    cbar = fig.colorbar(im,
+                        cax=cax, 
+                        # orientation='horizontal', # <-- Set orientation to horizontal
+                        label=r"$f(a', b' ; E)$"
+                        )
+    plt.savefig("fig/paper/fig5.png", bbox_inches="tight")
+    plt.close("all")
+
+
 if __name__ == "__main__":
+    fig5()
     fig4()
     fig3()
     fig2()
-    fig2()
+    fig1()
     plt.close("all")

@@ -24,14 +24,18 @@ deg = 3 # degree of the BSpline
 ab_min = 0
 ab_max = 1
 
-ga = maths.aprime # Function to transform a values into range (0,1)
-gb = maths.bprime # Function to transform a values into range (0,1)
-
 ### Fitting process parameters
 num_iters = 1000 # Number of iterations of least square regression for fitting, can be quit early
 perform_likelihood_test = True # Perform likelihood test on test sample for monitoring progress
 test_sample_size = 4301 # Number of elements in the testing data set
 theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
+
+## other useful constants
+bins_a = np.linspace(ab_min,ab_max,n_a + 1)
+bins_b = np.linspace(ab_min,ab_max,n_b + 1)
+
+ga = maths.aprime # Function to transform a values into range (0,1)
+gb = maths.bprime # Function to transform a values into range (0,1)
 
 
 '''
@@ -91,8 +95,6 @@ if __name__ == '__main__':
         ## Make Y matrix of histogram values to fit 
         Y = np.zeros((n_a,n_b,n_E))
         S = np.zeros((n_a,n_b,n_E))
-        bins_a = np.linspace(ab_min,ab_max,n_a + 1)
-        bins_b = np.linspace(ab_min,ab_max,n_b + 1)
         for i in range(n_E):
             df = Dat[energies[i]]
             avals = ga(df.gammaA)
