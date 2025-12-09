@@ -310,13 +310,13 @@ class BSpline3D:
         result = np.vstack(samples)[:_size]
         return result[0] if size is None else result
 
-    def _legacy_sample(self,
-                       logE: float,
-                       size: None | int=None,
-                       random_state: None | Generator=None,
-                       sample_depth: int=7,
-                       binning_offset: bool=True,
-                       num_quad_nodes: int=7) -> np.ndarray:
+    def igrid_sample(self,
+                     logE: float,
+                     size: None | int=None,
+                     random_state: None | Generator=None,
+                     sample_depth: int=7,
+                     binning_offset: bool=True,
+                     num_quad_nodes: int=7) -> np.ndarray:
         """
         Samples (a', b') for given log10E via binary split algorithm.
 
