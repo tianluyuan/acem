@@ -12,7 +12,7 @@ colors = prop_cycle.by_key()["color"]
 DLDX_LABEL = r"\text{d}\hat{\ell}/\text{d}x"
 LTOT_LABEL = r"\hat{\ell}_\text{tot}"
 
-def fig2():
+def fig1():
     plt.clf()
     ene = 1.0e3
     npem = util.load_npy("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
@@ -29,14 +29,14 @@ def fig2():
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
-             label=r"1 TeV $e^-$\n(RW 2013)", linestyle="--")
+             label=r"1 TeV $e^-$"+"\n(RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
     plt.ylim(ymin=0)
     plt.legend()
-    plt.savefig("fig/paper/fig2a.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig2a.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig1a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig1a.png", bbox_inches="tight")
 
     plt.clf()
     bins = np.linspace(3e5, dfem["ltot"].max(), 100).tolist()
@@ -65,11 +65,11 @@ def fig2():
     plt.yscale("log")
     plt.ylabel("Density [1/cm]")
     plt.xlabel(rf"${LTOT_LABEL}$ [cm]")
-    plt.savefig("fig/paper/fig2b.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig2b.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig1b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig1b.png", bbox_inches="tight")
 
 
-def fig3():
+def fig2():
     plt.clf()
     ene = 1.0e3
     npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
@@ -102,8 +102,8 @@ def fig3():
     plt.xlim(0, 1500)
     plt.ylim(0, 4e-3)
     plt.legend()
-    plt.savefig("fig/paper/fig3a.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig3a.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2a.png", bbox_inches="tight")
     
     plt.clf()
     enes = [1e1, 1e3, 1e5]
@@ -139,11 +139,11 @@ def fig3():
     plt.yscale("log")
     plt.ylabel("Density [GeV/cm]")
     plt.xlabel(rf"${LTOT_LABEL}/E$ [cm/GeV]")
-    plt.savefig("fig/paper/fig3b.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig3b.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig2b.png", bbox_inches="tight")
         
 
-def fig4():
+def fig3():
     plt.clf()
     particles = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "SIGMA+", "SIGMA-", "LAMBDA", "XSIZERO", "XSI-", "OMEGA-"]
     plabels = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
@@ -187,8 +187,8 @@ def fig4():
     plt.ylabel("Proportion of showers with 1 peak")
     plt.ylim(ymax=1)
     plt.legend(ncol=2)
-    plt.savefig("fig/paper/fig4a.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig4a.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig3a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig3a.png", bbox_inches="tight")
 
     ax[0].set_ylabel(rf"$\varrho({LTOT_LABEL}, a')$")
     ax[1].set_ylabel(rf"$\varrho({LTOT_LABEL}, b')$")
@@ -196,11 +196,11 @@ def fig4():
     ax[2].set_xscale("log")
     ax[2].set_xlabel("$E$ [GeV]")
     [ax[_].set_ylim(-1, 1) for _ in range(3)]
-    fig.savefig("fig/paper/fig4b.pdf", bbox_inches="tight")
-    fig.savefig("fig/paper/fig4b.png", bbox_inches="tight")
+    fig.savefig("fig/paper/fig3b.pdf", bbox_inches="tight")
+    fig.savefig("fig/paper/fig3b.png", bbox_inches="tight")
 
 
-def fig5():
+def fig4():
     plt.clf()
     ene = 1.0e3
     npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
@@ -250,8 +250,8 @@ def fig5():
     plt.xlim(0, 1500)
     plt.ylim(0, 4e-3)
     plt.legend()
-    plt.savefig("fig/paper/fig5a.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig5a.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig4a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig4a.png", bbox_inches="tight")
 
     plt.clf()
     plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)", markersize=1.5)
@@ -261,13 +261,13 @@ def fig5():
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.legend()
-    plt.savefig("fig/paper/fig5b.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig5b.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig4b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig4b.png", bbox_inches="tight")
 
 
 if __name__ == "__main__":
-    fig5()
     fig4()
     fig3()
+    fig2()
     fig2()
     plt.close("all")

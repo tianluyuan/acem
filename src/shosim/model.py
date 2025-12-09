@@ -260,6 +260,15 @@ class Parametrization1D(ModelBase):
         -------
         rv_frozen: A frozen skewnormal (EM) or NIG (otherwise) distribution
         object from scipy.stats.
+
+        
+        >>> a = Parametrization1D(media.ICE)
+        >>> b = RWParametrization1D(media.ICE)
+        >>> for pdg in b.MEAN_ALPHAS:
+        ...     for en in np.linspace(1, 6, 10):
+        ...         ltot_a = a.ltot_dist(pdg, 10**en).mean()
+        ...         ltot_diff = np.abs(ltot_a - b.ltot_dist(pdg, 10**en).mean())
+        ...         assert ltot_diff / ltot_a < 0.1
         """
         ltpars = self.LTOTS[self._converter(pdg)]
         # since the fit is performed in log-space, distribution
