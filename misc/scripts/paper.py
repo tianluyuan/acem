@@ -186,6 +186,7 @@ def fig3():
     plt.xlabel("$E$ [GeV]")
     plt.ylabel("Proportion of showers with 1 peak")
     plt.ylim(ymax=1)
+    plt.xlim(1., 1e6)
     plt.legend(ncol=2)
     plt.savefig("fig/paper/fig3a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig3a.png", bbox_inches="tight")
@@ -195,6 +196,7 @@ def fig3():
     ax[2].set_ylabel(r"$\varrho(a', b')$")
     ax[2].set_xscale("log")
     ax[2].set_xlabel("$E$ [GeV]")
+    ax[2].set_xlim(1., 1e6)
     [ax[_].set_ylim(-1, 1) for _ in range(3)]
     fig.savefig("fig/paper/fig3b.pdf", bbox_inches="tight")
     fig.savefig("fig/paper/fig3b.png", bbox_inches="tight")
