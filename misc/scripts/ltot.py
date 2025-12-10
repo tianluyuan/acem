@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import argparse
 from importlib.resources import files, as_file
 from shosim.util import load_batch
-from shosim.maths import qrt, cbc, lin
+from shosim.maths import sxt, cbc, lin
 plt.style.use('present')
 
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.norminvgauss
             # 2x shape, loc, scale
-            p_fn = [qrt, qrt, lin, cbc]
+            p_fn = [sxt, sxt, lin, cbc]
             sgns = [1, -1, 1, 1]
             clean = False
         else:

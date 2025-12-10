@@ -15,7 +15,6 @@ smoothness = [0.1, 0.1, 0.01] # degree of smoothing along each dimension [a,b,E]
 # c_E = 6 # Number of basis splines along E-dimension
 c_a = 17 # Number of basis splines along a-dimension
 c_b = 17 # Number of basis splines along b-dimension
-c_E = 8 # Number of basis splines along E-dimension
 n_a = 450 # Number of histogram bins along a-dimension
 n_b = 450 # Number of histogram bins along b-dimension
 deg = 3 # degree of the BSpline
@@ -28,7 +27,6 @@ ab_max = 1
 num_iters = 1000 # Number of iterations of least square regression for fitting, can be quit early
 perform_likelihood_test = True # Perform likelihood test on test sample for monitoring progress
 test_sample_size = 4301 # Number of elements in the testing data set
-theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
 
 ## other useful constants
 bins_a = np.linspace(ab_min,ab_max,n_a + 1)
@@ -88,9 +86,11 @@ if __name__ == '__main__':
         energies = list(Dat.keys())
         log_ens = np.log10(energies) # log (base 10) of the energy values used for fitting
         n_E = len(log_ens) # Number of energy levels used for fitting
+        c_E = int(log_ens[-1] - log_ens[0]) + 3 # Number of basis splines along E-dimension
         E_k = np.linspace(log_ens[0],log_ens[-1],c_E - deg + 1)
         E_k = sc.interpolate.interp1d(np.arange(c_E - deg + 1),E_k,bounds_error=False,fill_value='extrapolate')(np.arange(-deg,c_E + 1))
         knots = (a_k, b_k, E_k)
+        theta_0 = np.random.default_rng(250611).random(c_a*c_b*c_E) # Initial guess for spline parameters
 
         ## Make Y matrix of histogram values to fit 
         Y = np.zeros((n_a,n_b,n_E))
