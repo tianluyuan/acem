@@ -53,7 +53,7 @@ if __name__=='__main__':
                  'k.',
                  label='samples (via rejection)',
                  markersize=1.5)
-        # plt.plot(*curr.THETAS[pdg].igrid_sample(logE,40, num_quad_nodes=10, random_state=rng).T,
+        # plt.plot(*curr.THETAS[pdg]._igrid_sample(logE,40, num_quad_nodes=10, random_state=rng).T,
         #          'r.',
         #          label='Binary sampling',
         #          markersize=1.5)
