@@ -271,8 +271,8 @@ def fig5():
     from spline import bins_a, bins_b, ga, gb
 
     _part = "PION+"
-    enes = [1e1, 1e3, 1e6]
-    labs = [r"10 GeV $\pi^+$", r"1 TeV $\pi^+$", r"1 PeV $\pi^+$"]
+    enes = [1e1, 1e3, 1e5]
+    labs = [r"10 GeV $\pi^+$", r"1 TeV $\pi^+$", r"100 TeV $\pi^+$"]
     bspl = model.Parametrization1D.THETAS[pdg.FLUKA2PDG[_part]]
     vmax = 50 #np.exp(np.median([bspl(*bspl.mode(np.log10(ene)), np.log10(ene)) for ene in enes]))*1.5
 
