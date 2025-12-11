@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import argparse
 from importlib.resources import files, as_file
 from shosim.util import load_batch
-from shosim.maths import sxt, qnt, cbc
+from shosim.maths import sxt, qnt, sxt, qrt
 plt.style.use('present')
 
 
@@ -40,13 +40,13 @@ if __name__ == '__main__':
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.norminvgauss
             # 2x shape, loc, scale
-            p_fn = [sxt, sxt, cbc, qnt]
+            p_fn = [sxt, sxt, sxt, sxt]
             sgns = [1, -1, 1, 1]
             clean = False
         else:
             form = stats.skewnorm
-            # lin for loc (mean), cbc for scale (sigma)
-            p_fn = [cbc, cbc, cbc]
+            # shape then loc (mean) and scale (sigma)
+            p_fn = [sxt, sxt, sxt]
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
 

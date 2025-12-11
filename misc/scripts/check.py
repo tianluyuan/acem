@@ -33,8 +33,8 @@ if __name__=='__main__':
     except IndexError:
         seed = None
     rng = np.random.default_rng(seed)
-    curr = Parametrization1D(Parametrization1D.FLUKA_MEDIUM)
-    prev = RWParametrization1D(Parametrization1D.FLUKA_MEDIUM)
+    curr = Parametrization1D(Parametrization1D.FLUKA_MEDIUM, random_state=rng)
+    prev = RWParametrization1D(Parametrization1D.FLUKA_MEDIUM, random_state=rng)
 
     for pdg in curr.THETAS.keys():
         try:

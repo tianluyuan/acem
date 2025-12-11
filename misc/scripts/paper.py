@@ -334,21 +334,21 @@ def fig6():
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.norminvgauss
             # 2x shape, loc, scale
-            p_fn = [maths.sxt, maths.sxt, maths.cbc, maths.qnt]
+            p_fn = [maths.sxt, maths.sxt, maths.sxt, maths.sxt]
             sgns = [1, -1, 1, 1]
             clean = False
             markers = ['<', '>', 'o', 's']
             labels = [r"\alpha", r"-\beta", r"\mu", r"\sigma" ]
-            lsts = [':', '-.', '-', '--']
+            # lsts = [':', '-.', '-', '--']
         else:
             form = stats.skewnorm
-            # lin for loc (mean), maths.cbc for scale (sigma)
-            p_fn = [maths.cbc, maths.cbc, maths.cbc]
+            # lin for loc (mean), maths.sxt for scale (sigma)
+            p_fn = [maths.sxt, maths.sxt, maths.sxt]
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
             markers = ['<', 'o', 's']
             labels = [r"\alpha", r"\mu", r"\sigma"]
-            lsts = [':', '-', '--']
+            # lsts = [':', '-', '--']
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv', clean=clean)
         ens = list(Dat.keys())
         log_ens = np.log10(ens)
@@ -413,8 +413,8 @@ def fig6():
     
 if __name__ == "__main__":
     fig6()
-    fig5()
-    fig4()
-    fig3()
-    fig2()
-    fig1()
+    # fig5()
+    # fig4()
+    # fig3()
+    # fig2()
+    # fig1()
