@@ -11,28 +11,31 @@ def efn(en, fn, *args):
     return np.exp(fn(np.log10(en), *args))
 
 
+def spt(x, t0, t1, t2, t3, t4, t5, t6, t7):
+    return np.polyval([t7, t6, t5, t4, t3, t2, t1, t0], x)
+
 def sxt(x, t0, t1, t2, t3, t4, t5, t6):
-    return t6*x**6 + qnt(x, t0, t1, t2, t3, t4, t5)
+    return np.polyval([t6, t5, t4, t3, t2, t1, t0], x)
 
 
 def qnt(x, t0, t1, t2, t3, t4, t5):
-    return t5*x**5 + qrt(x, t0, t1, t2, t3, t4)
+    return np.polyval([t5, t4, t3, t2, t1, t0], x)
 
 
 def qrt(x, t0, t1, t2, t3, t4):
-    return t4*x**4 + cbc(x, t0, t1, t2, t3)
+    return np.polyval([t4, t3, t2, t1, t0], x)
 
 
 def cbc(x, t0, t1, t2, t3):
-    return t3*x**3 + qdt(x, t0, t1, t2)
+    return np.polyval([t3, t2, t1, t0], x)
 
 
 def qdt(x, t0, t1, t2):
-    return t2*x**2 + lin(x, t0, t1)
+    return np.polyval([t2, t1, t0], x)
 
 
 def lin(x, t0, t1):
-    return t1 * x + t0
+    return np.polyval([t1, t0], x)
 
 
 def aprime(a):

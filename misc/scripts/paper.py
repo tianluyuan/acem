@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
-from scipy import stats
+from scipy import stats, optimize
 from matplotlib import pyplot as plt
 
 from shosim import model, util, maths, pdg
@@ -11,6 +11,7 @@ colors = prop_cycle.by_key()["color"]
 
 DLDX_LABEL = r"\text{d}\hat{\ell}/\text{d}x"
 LTOT_LABEL = r"\hat{\ell}_\text{tot}"
+LNSG_LABEL = r"\ln s_p g_p(E)"
 
 def fig1():
     plt.clf()
@@ -328,9 +329,57 @@ def fig6():
     plt.clf()
     ene = 1.0e3
 
+    # copied over from ltot.py
+    for particle, _c in zip(["ELECTRON", "PION+"], colors[:2]):
+        if particle in ['ELECTRON', 'PHOTON']:
+            form = stats.norminvgauss
+            # 2x shape, loc, scale
+            p_fn = [maths.sxt, maths.sxt, maths.cbc, maths.qnt]
+            sgns = [1, -1, 1, 1]
+            clean = False
+            markers = ['<', '>', 'o', 's']
+            labels = [r"\alpha_\text{NIG}", r"\beta_\text{NIG}", r"\mu_\text{NIG}", r"\sigma_\text{NIG}" ]
+            lsts = [':', '-.', '-', '--']
+        else:
+            form = stats.skewnorm
+            # lin for loc (mean), maths.cbc for scale (sigma)
+            p_fn = [maths.cbc, maths.cbc, maths.cbc]
+            sgns = [1, 1, 1]
+            clean = True  # mask tricky decays
+            markers = ['<', 'o', 's']
+            labels = [r"\alpha_\text{SN}", r"\mu_\text{SN}", r"\sigma_\text{SN}"]
+            lsts = [':', '-', '--']
+        Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv', clean=clean)
+        ens = list(Dat.keys())
+        log_ens = np.log10(ens)
+        n_E = len(log_ens)
+        results = []
+
+        for i in range(n_E):
+            df = Dat[ens[i]]
+            ltots = df['ltot']
+            _res = form.fit(ltots, method='MLE')
+            results.append(_res)
+        results = np.asarray(results) * sgns
+        _sel = results[:, 0] > 0
+        par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log(_y[_sel]))[0]
+                    for _f, _y in zip(p_fn, results.T)]
+        for i, (_f, _y, _p, _m, _l) in enumerate(zip(p_fn, results.T, par_fits, markers, labels)):
+            plt.plot(log_ens[_sel], _y[_sel], _m, color=_c, markersize=2, label=rf'${_l}$')
+            plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=_c, markersize=2)
+            plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=_c, linewidth=1)
+        plt.yscale('log')
+        plt.legend(ncol=2)
+        plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
+        plt.ylabel(rf"${LNSG_LABEL}$")
+        plt.savefig("fig/paper/fig6a.pdf", bbox_inches="tight")
+        plt.savefig("fig/paper/fig6a.png", bbox_inches="tight")
+    # end copy from ltot.py
+
     dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
     dfpi = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
     bins = np.linspace(3e5, dfem["ltot"].max(), 100).tolist()
+    plt.clf()
     plt.hist(
         dfem["ltot"],
         bins=bins,
