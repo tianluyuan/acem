@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import argparse
 from importlib.resources import files, as_file
 from shosim.util import load_batch
-from shosim.maths import sxt, cbc, lin
+from shosim.maths import sxt, cbc, lin, qdt
 plt.style.use('present')
 
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         else:
             form = stats.skewnorm
             # lin for loc (mean), cbc for scale (sigma)
-            p_fn = [cbc, lin, cbc]
+            p_fn = [cbc, qdt, cbc]
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
 
@@ -93,8 +93,8 @@ if __name__ == '__main__':
         if args.show or args.savefig:
             plt.clf()
             for i, (_f, _y, _p) in enumerate(zip(p_fn, results.T, par_fits)):
-                plt.plot(log_ens[_sel], _y[_sel], 'o', color=colors[i], label=f'p{i}')
-                plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=colors[i])
+                plt.plot(log_ens[_sel], _y[_sel], 'o', color=colors[i], label=f'p{i}', markersize=2)
+                plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=colors[i], markersize=2)
                 plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=colors[i])
             plt.yscale('log')
             plt.legend()

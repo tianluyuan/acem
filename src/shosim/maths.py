@@ -24,7 +24,11 @@ def qrt(x, t0, t1, t2, t3, t4):
 
 
 def cbc(x, t0, t1, t2, t3):
-    return t3*x**3 + t2*x**2 + lin(x, t0, t1)
+    return t3*x**3 + qdt(x, t0, t1, t2)
+
+
+def qdt(x, t0, t1, t2):
+    return t2*x**2 + lin(x, t0, t1)
 
 
 def lin(x, t0, t1):

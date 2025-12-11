@@ -9,7 +9,7 @@ from scipy import stats, interpolate
 from scipy.stats._distn_infrastructure import rv_frozen
 from . import media
 from .pdg import FLUKA2PDG
-from .maths import efn, lin, cbc, qrt, qnt, sxt, a, b, BSpline3D
+from .maths import efn, lin, qdt, cbc, qrt, qnt, sxt, a, b, BSpline3D
 
 
 def ltot_scale(m0: media.Medium, m1: media.Medium):
@@ -287,6 +287,8 @@ class Parametrization1D(ModelBase):
             _p = ltpars[f'p{i}']
             if len(_p) == 2:
                 _fn = lin
+            elif len(_p) == 3:
+                _fn = qdt
             elif len(_p) == 4:
                 _fn = cbc
             elif len(_p) == 5:
@@ -302,6 +304,8 @@ class Parametrization1D(ModelBase):
         # to rescale the loc and scale parameters
         sdist_args[-1] *= self._scale
         sdist_args[-2] *= self._scale
+        import pdb
+        pdb.set_trace()
         return sdist(*sdist_args)
 
     def mean_ab(self, pdg: int, energy: float) -> Shower1D:
