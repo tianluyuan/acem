@@ -5,7 +5,8 @@ import scipy as sp
 import sys
 from matplotlib import pyplot as plt
 from shosim.model import Parametrization1D, RWParametrization1D
-from shosim import media
+from shosim import media, util
+from shosim.pdg import PDG2FLUKA
 
 
 def legacy_eval(c_poly, knots, a, b, logE):
@@ -32,9 +33,32 @@ if __name__=='__main__':
     except IndexError:
         seed = None
     rng = np.random.default_rng(seed)
-    curr = Parametrization1D(media.IC3)
-    prev = RWParametrization1D(media.IC3)
+    curr = Parametrization1D(Parametrization1D.FLUKA_MEDIUM)
+    prev = RWParametrization1D(Parametrization1D.FLUKA_MEDIUM)
 
+    for pdg in curr.THETAS.keys():
+        try:
+            df = util.load_csv(
+                f"fluka/DataOutputs_{PDG2FLUKA[pdg]}/{PDG2FLUKA[pdg]}_{util.format_energy(10**logE)}.csv", False)
+            bins = np.linspace(df["ltot"].min(), df["ltot"].max(), 100).tolist()
+            _, _, lines = plt.hist(
+                df["ltot"],
+                bins=bins,
+                density=True,
+                histtype="step",
+            )
+            xs = np.linspace(bins[0], bins[-1], 1000)
+            plt.plot(xs,
+                     curr.ltot_dist(pdg, 10**logE).pdf(xs), "--",
+                     color=lines[0].get_edgecolor(), label=f"{pdg}")
+        except FileNotFoundError:
+            pass
+    plt.legend()
+    plt.xlabel("ltot [cm]")
+    plt.ylabel("Density [1/cm]")
+    plt.yscale("log")
+    plt.show()
+        
     N = 100
     x = np.linspace(0, 1, N)
     y = np.linspace(0, 1, N)
