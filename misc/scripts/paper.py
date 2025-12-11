@@ -11,7 +11,7 @@ colors = prop_cycle.by_key()["color"]
 
 DLDX_LABEL = r"\text{d}\hat{\ell}/\text{d}x"
 LTOT_LABEL = r"\hat{\ell}_\text{tot}"
-LNSG_LABEL = r"\ln s_p g_p(E)"
+SPGP_LABEL = r"s_p g_p"
 
 def fig1():
     plt.clf()
@@ -338,7 +338,7 @@ def fig6():
             sgns = [1, -1, 1, 1]
             clean = False
             markers = ['<', '>', 'o', 's']
-            labels = [r"\alpha_\text{NIG}", r"\beta_\text{NIG}", r"\mu_\text{NIG}", r"\sigma_\text{NIG}" ]
+            labels = [r"\alpha", r"-\beta", r"\mu", r"\sigma" ]
             lsts = [':', '-.', '-', '--']
         else:
             form = stats.skewnorm
@@ -347,7 +347,7 @@ def fig6():
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
             markers = ['<', 'o', 's']
-            labels = [r"\alpha_\text{SN}", r"\mu_\text{SN}", r"\sigma_\text{SN}"]
+            labels = [r"\alpha", r"\mu", r"\sigma"]
             lsts = [':', '-', '--']
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv', clean=clean)
         ens = list(Dat.keys())
@@ -367,11 +367,12 @@ def fig6():
         for i, (_f, _y, _p, _m, _l) in enumerate(zip(p_fn, results.T, par_fits, markers, labels)):
             plt.plot(log_ens[_sel], _y[_sel], _m, color=_c, markersize=2, label=rf'${_l}$')
             plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=_c, markersize=2)
-            plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=_c, linewidth=1)
+            plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=_c, linewidth=1,
+                     label=None)
         plt.yscale('log')
         plt.legend(ncol=2)
         plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
-        plt.ylabel(rf"${LNSG_LABEL}$")
+        plt.ylabel("Parameter values")
         plt.savefig("fig/paper/fig6a.pdf", bbox_inches="tight")
         plt.savefig("fig/paper/fig6a.png", bbox_inches="tight")
     # end copy from ltot.py
@@ -412,8 +413,8 @@ def fig6():
     
 if __name__ == "__main__":
     fig6()
-    # fig5()
-    # fig4()
-    # fig3()
-    # fig2()
-    # fig1()
+    fig5()
+    fig4()
+    fig3()
+    fig2()
+    fig1()
