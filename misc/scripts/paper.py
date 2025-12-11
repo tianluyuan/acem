@@ -67,6 +67,7 @@ def fig1():
     plt.xlabel(rf"${LTOT_LABEL}$ [cm]")
     plt.savefig("fig/paper/fig1b.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig1b.png", bbox_inches="tight")
+    plt.close("all")
 
 
 def fig2():
@@ -141,6 +142,7 @@ def fig2():
     plt.xlabel(rf"${LTOT_LABEL}/E$ [cm/GeV]")
     plt.savefig("fig/paper/fig2b.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig2b.png", bbox_inches="tight")
+    plt.close("all")
         
 
 def fig3():
@@ -200,6 +202,7 @@ def fig3():
     [ax[_].set_ylim(-1, 1) for _ in range(3)]
     fig.savefig("fig/paper/fig3b.pdf", bbox_inches="tight")
     fig.savefig("fig/paper/fig3b.png", bbox_inches="tight")
+    plt.close("all")
 
 
 def fig4():
@@ -265,6 +268,7 @@ def fig4():
     plt.legend()
     plt.savefig("fig/paper/fig4b.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig4b.png", bbox_inches="tight")
+    plt.close("all")
 
 
 def fig5():
@@ -284,15 +288,14 @@ def fig5():
         bvals = gb(df.gammaB)
         ax[0][i].hist2d(avals,bvals,bins=(bins_a,bins_b),cmap="plasma", density=True,
                         vmin=0, vmax=vmax)
-                     # norm=colors.LogNorm())
         ax[0][i].text(
             0.96,  # Slight offset from the right edge (1.0 is the exact edge)
             0.04,  # Slight offset from the bottom edge (0.0 is the exact bottom)
             f"{lab} (MC)",
-            transform=ax[0][i].transAxes,  # Use Axes coordinates (0 to 1)
+            transform=ax[0][i].transAxes,
             fontsize=18,
-            verticalalignment='bottom', # Text goes up from the baseline
-            horizontalalignment='right', # Text flows left from the point
+            verticalalignment='bottom',
+            horizontalalignment='right',
             color='white'
         )
     X, Y = np.meshgrid(bins_a, bins_b)
@@ -303,29 +306,65 @@ def fig5():
             0.96,  # Slight offset from the right edge (1.0 is the exact edge)
             0.04,  # Slight offset from the bottom edge (0.0 is the exact bottom)
             f"{lab} (model)",
-            transform=ax[1][i].transAxes,  # Use Axes coordinates (0 to 1)
+            transform=ax[1][i].transAxes,
             fontsize=18,
-            verticalalignment='bottom', # Text goes up from the baseline
-            horizontalalignment='right', # Text flows left from the point
+            verticalalignment='bottom',
+            horizontalalignment='right',
             color='white'
         )
     fig.supylabel(r"$b'$", x=0.065)
     fig.supxlabel(r"$a'$", y=0.02)
-    cbar_ax_position = [0.92, 0.15, 0.01, 0.7] # 0.92 is far right, 0.01 is thin width
-    cax = fig.add_axes(cbar_ax_position)
-    cbar = fig.colorbar(im,
-                        cax=cax, 
-                        # orientation='horizontal', # <-- Set orientation to horizontal
-                        label=r"$f(a', b' ; E)$"
-                        )
+    # 0.92 is far right, 0.01 is thin width
+    cax = fig.add_axes([0.92, 0.15, 0.01, 0.7])
+    _ = fig.colorbar(im,
+                     cax=cax, 
+                     label=r"$f(a', b' ; E)$"
+                     )
     plt.savefig("fig/paper/fig5.png", bbox_inches="tight")
     plt.close("all")
 
 
-if __name__ == "__main__":
-    fig5()
-    fig4()
-    fig3()
-    fig2()
-    fig1()
+def fig6():
+    plt.clf()
+    ene = 1.0e3
+
+    dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    dfpi = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
+    bins = np.linspace(3e5, dfem["ltot"].max(), 100).tolist()
+    plt.hist(
+        dfem["ltot"],
+        bins=bins,
+        density=True,
+        histtype="step",
+        label=r"1 TeV $e^-$ (FLUKA)",
+    )
+    plt.hist(
+        dfpi["ltot"],
+        bins=bins,
+        density=True,
+        histtype="step",
+        label=r"1 TeV $\pi^+$ (FLUKA)",
+    )
+
+    xs = np.linspace(bins[0], bins[-1], 1000)
+    par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
+    plt.plot(xs, par.ltot_dist(11, ene).pdf(xs), "--", color=colors[0], label=r"1 TeV $e^-$ (model)")
+    plt.plot(xs, par.ltot_dist(211, ene).pdf(xs), ":", color=colors[1], label=r"1 TeV $\pi^+$ (model)")
+
+    plt.legend(loc="upper left")
+    plt.xlim(xmin=bins[0])
+    plt.ylim(ymin=5e-8)
+    plt.yscale("log")
+    plt.ylabel("Density [1/cm]")
+    plt.xlabel(rf"${LTOT_LABEL}$ [cm]")
+    plt.savefig("fig/paper/fig6b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig6b.png", bbox_inches="tight")
     plt.close("all")
+    
+if __name__ == "__main__":
+    fig6()
+    # fig5()
+    # fig4()
+    # fig3()
+    # fig2()
+    # fig1()
