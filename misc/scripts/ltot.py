@@ -40,13 +40,13 @@ if __name__ == '__main__':
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.norminvgauss
             # 2x shape, loc, scale
-            p_fn = [sxt, sxt, lin, cbc]
+            p_fn = [sxt, sxt, cbc, cbc]
             sgns = [1, -1, 1, 1]
             clean = False
         else:
             form = stats.skewnorm
             # lin for loc (mean), cbc for scale (sigma)
-            p_fn = [cbc, qdt, cbc]
+            p_fn = [cbc, cbc, cbc]
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
 

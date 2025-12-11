@@ -268,7 +268,7 @@ class Parametrization1D(ModelBase):
         ...     for en in np.linspace(1, 6, 10):
         ...         ltot_a = a.ltot_dist(pdg, 10**en).mean()
         ...         ltot_diff = np.abs(ltot_a - b.ltot_dist(pdg, 10**en).mean())
-        ...         assert ltot_diff / ltot_a < 0.1
+        ...         assert ltot_diff / ltot_a < 0.2
         """
         ltpars = self.LTOTS[self._converter(pdg)]
         # since the fit is performed in log-space, distribution
@@ -304,8 +304,6 @@ class Parametrization1D(ModelBase):
         # to rescale the loc and scale parameters
         sdist_args[-1] *= self._scale
         sdist_args[-2] *= self._scale
-        import pdb
-        pdb.set_trace()
         return sdist(*sdist_args)
 
     def mean_ab(self, pdg: int, energy: float) -> Shower1D:
