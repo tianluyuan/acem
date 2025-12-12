@@ -437,8 +437,8 @@ class BSpline3D:
         b_i -= (b_i > self.c_poly.shape[1])
         E_i -= (E_i > self.c_poly.shape[2])
         Z = 0.
-        for l in range(4):
+        for k in range(4):
             for m in range(4):
                 for n in range(4):
-                    Z += self.c_poly[a_i-1,b_i-1,E_i-1,l,m,n] * aprime**l * bprime**m * logE**n
+                    Z += self.c_poly[a_i-1,b_i-1,E_i-1,k,m,n] * aprime**k * bprime**m * logE**n
         return Z

@@ -9,23 +9,6 @@ from shosim import media, util
 from shosim.pdg import PDG2FLUKA
 
 
-def legacy_eval(c_poly, knots, a, b, logE):
-    a_k, b_k, E_k = knots
-    a_i = np.searchsorted(a_k[3:-3], a, side='right')
-    b_i = np.searchsorted(b_k[3:-3], b, side='right')
-    E_i = np.searchsorted(E_k[3:-3], logE, side='right')
-
-    a_i -= (a_i > c_poly.shape[0]) # so that things don't break at the upper boundaries
-    b_i -= (b_i > c_poly.shape[1])
-    E_i -= (E_i > c_poly.shape[2])
-    Z = 0.
-    for l in range(4):
-        for m in range(4):
-            for n in range(4):
-                Z += c_poly[a_i-1,b_i-1,E_i-1,l,m,n] * a**l * b**m * logE**n
-    return Z
-
-
 if __name__=='__main__':
     logE = float(sys.argv[1])
     try:
@@ -102,7 +85,7 @@ if __name__=='__main__':
     plt.show()
 
     for pdg, B in curr.THETAS.items():
-        Z0 = legacy_eval(B.c_poly, B.bspl.t, X, Y, logE)
+        Z0 = B._legacy_eval(X, Y, logE)
         Z1 = B(X, Y, logE)
 
         plt.figure()
