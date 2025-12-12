@@ -16,15 +16,15 @@ SPGP_LABEL = r"s_p g_p"
 def fig1():
     plt.clf()
     ene = 1.0e3
-    npem = util.load_npy("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
+    npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
 
-    dfem = util.load_csv("fluka/DataOutputs_ELECTRON/ELECTRON_1.00000E3.csv", False)
-    dfpi = util.load_csv("fluka/DataOutputs_PION+/PION+_1.00000E3.csv", False)
+    df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
-    assert(dfem["Zbins"].nunique()==1)
-    assert(dfem["Zwidth"].nunique()==1)
-    nbins = int(dfem.iloc[0]["Zbins"])
-    xs = (np.arange(nbins) + 0.5) * dfem.iloc[0]["Zwidth"]
+    assert(df1["Zbins"].nunique()==1)
+    assert(df1["Zwidth"].nunique()==1)
+    nbins = int(df1.iloc[0]["Zbins"])
+    xs = (np.arange(nbins) + 0.5) * df1.iloc[0]["Zwidth"]
     for _ in range(4):
         plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
 
@@ -40,16 +40,16 @@ def fig1():
     plt.savefig("fig/paper/fig1a.png", bbox_inches="tight")
 
     plt.clf()
-    bins = np.linspace(3e5, dfem["ltot"].max(), 100).tolist()
+    bins = np.linspace(3e5, df1["ltot"].max(), 100).tolist()
     plt.hist(
-        dfem["ltot"],
+        df1["ltot"],
         bins=bins,
         density=True,
         histtype="step",
         label=r"1 TeV $e^-$ (FLUKA)",
     )
     plt.hist(
-        dfpi["ltot"],
+        df2["ltot"],
         bins=bins,
         density=True,
         histtype="step",
@@ -77,13 +77,13 @@ def fig2():
     npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
     nppi = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
-    dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
-    dfpi = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
+    df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
-    assert(dfem["Zbins"].nunique()==1)
-    assert(dfem["Zwidth"].nunique()==1)
-    nbins = int(dfem.iloc[0]["Zbins"])
-    xs = (np.arange(nbins) + 0.5) * dfem.iloc[0]["Zwidth"]
+    assert(df1["Zbins"].nunique()==1)
+    assert(df1["Zwidth"].nunique()==1)
+    nbins = int(df1.iloc[0]["Zbins"])
+    xs = (np.arange(nbins) + 0.5) * df1.iloc[0]["Zwidth"]
     nruns = 100
     for _ in range(nruns):
         plt.plot(xs,
@@ -114,10 +114,10 @@ def fig2():
     for ene, lst in zip(enes, lsts):
         estr = util.format_energy(ene)
 
-        dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{estr}.csv", False)
-        dfpi = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{estr}.csv", False)
+        df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{estr}.csv", False)
+        df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{estr}.csv", False)
         plt.hist(
-            dfem["ltot"]/ene,
+            df1["ltot"]/ene,
             bins=bins,
             density=True,
             histtype="step",
@@ -126,7 +126,7 @@ def fig2():
             linestyle=lst
         )
         plt.hist(
-            dfpi["ltot"]/ene,
+            df2["ltot"]/ene,
             bins=bins,
             density=True,
             histtype="step",
@@ -212,12 +212,12 @@ def fig4():
     npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
     nppi = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
-    dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
 
-    assert(dfem["Zbins"].nunique()==1)
-    assert(dfem["Zwidth"].nunique()==1)
-    nbins = int(dfem.iloc[0]["Zbins"])
-    zwdth = float(dfem.iloc[0]["Zwidth"])
+    assert(df1["Zbins"].nunique()==1)
+    assert(df1["Zwidth"].nunique()==1)
+    nbins = int(df1.iloc[0]["Zbins"])
+    zwdth = float(df1.iloc[0]["Zwidth"])
     xs = np.arange(0, nbins * zwdth)
     nruns = 100
 
@@ -327,8 +327,6 @@ def fig5():
 
 def fig6():
     plt.clf()
-    ene = 1.0e3
-
     # copied over from ltot.py
     for particle, _c in zip(["ELECTRON", "PION+"], colors[:2]):
         if particle in ['ELECTRON', 'PHOTON']:
@@ -338,16 +336,16 @@ def fig6():
             sgns = [1, -1, 1, 1]
             clean = False
             markers = ['<', '>', 'o', 's']
-            labels = [r"\alpha", r"-\beta", r"\mu", r"\sigma" ]
+            labels = [r"\alpha", r"-\beta", r"\xi", r"\omega" ]
             # lsts = [':', '-.', '-', '--']
         else:
             form = stats.skewnorm
-            # lin for loc (mean), maths.sxt for scale (sigma)
+            # lin for loc (mean), maths.sxt for scale (omega)
             p_fn = [maths.sxt, maths.sxt, maths.sxt]
             sgns = [1, 1, 1]
             clean = True  # mask tricky decays
             markers = ['<', 'o', 's']
-            labels = [r"\alpha", r"\mu", r"\sigma"]
+            labels = [r"\alpha", r"\xi", r"\omega"]
             # lsts = [':', '-', '--']
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv', clean=clean)
         ens = list(Dat.keys())
@@ -369,27 +367,28 @@ def fig6():
             plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=_c, markersize=2)
             plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=_c, linewidth=1,
                      label=None)
-        plt.yscale('log')
-        plt.legend(ncol=2)
-        plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
-        plt.ylabel("Parameter values")
-        plt.savefig("fig/paper/fig6a.pdf", bbox_inches="tight")
-        plt.savefig("fig/paper/fig6a.png", bbox_inches="tight")
+    plt.yscale('log')
+    plt.legend(ncol=2)
+    plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
+    plt.ylabel("Parameter values")
+    plt.savefig("fig/paper/fig6a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig6a.png", bbox_inches="tight")
     # end copy from ltot.py
 
-    dfem = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
-    dfpi = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
-    bins = np.linspace(3e5, dfem["ltot"].max(), 100).tolist()
+    ene = 1.0e3
+    df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
+    bins = np.linspace(3e5, df1["ltot"].max(), 100).tolist()
     plt.clf()
     plt.hist(
-        dfem["ltot"],
+        df1["ltot"],
         bins=bins,
         density=True,
         histtype="step",
         label=r"1 TeV $e^-$ (FLUKA)",
     )
     plt.hist(
-        dfpi["ltot"],
+        df2["ltot"],
         bins=bins,
         density=True,
         histtype="step",
@@ -410,9 +409,47 @@ def fig6():
     plt.savefig("fig/paper/fig6b.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig6b.png", bbox_inches="tight")
     plt.close("all")
+
+
+def fig7():
+    ene = 1e1
+    df1 = util.load_csv(f"fluka/DataOutputs_KAON+/KAON+_{util.format_energy(ene)}.csv", False)
+    df2 = util.load_csv(f"fluka/DataOutputs_KAONSHRT/KAONSHRT_{util.format_energy(ene)}.csv", False)
+    bins = np.linspace(0, df1["ltot"].max(), 100).tolist()
+    plt.clf()
+    tex1 = pdg.PDG2LATEX[pdg.FLUKA2PDG["KAON+"]]
+    tex2 = pdg.PDG2LATEX[pdg.FLUKA2PDG["KAONSHRT"]]
+    plt.hist(
+        df1["ltot"],
+        bins=bins,
+        density=True,
+        histtype="step",
+        label=rf"10 GeV ${tex1}$ (FLUKA)",
+    )
+    plt.hist(
+        df2["ltot"],
+        bins=bins,
+        density=True,
+        histtype="step",
+        label=rf"10 GeV ${tex2}$ (FLUKA)",
+    )
+
+    xs = np.linspace(bins[0], bins[-1], 1000)
+    par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG["KAON+"], ene).pdf(xs), "--", color=colors[0], label=rf"10 GeV ${tex1}$ (model)")
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG["KAONSHRT"], ene).pdf(xs), ":", color=colors[1], label=rf"10 GeV ${tex2}+$ (model)")
+
+    plt.legend(loc="upper left")
+    plt.xlim(xmin=bins[0])
+    plt.ylabel("Density [1/cm]")
+    plt.xlabel(rf"${LTOT_LABEL}$ [cm]")
+    plt.savefig("fig/paper/fig7b.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig7b.png", bbox_inches="tight")
+    plt.close("all")
     
 if __name__ == "__main__":
-    fig6()
+    fig7()
+    # fig6()
     # fig5()
     # fig4()
     # fig3()
