@@ -38,4 +38,4 @@ par = model.Parametrization1D(media.ICE)
 shos = par.sample(211, 1e3, 100)
 ```
 
-`shos` will be a list of `Shower1D` objects, which is a simple container that consists of the amplitude and 1D shape of the Cherenkov-weighted track length. The `.dldx(xs)` method can be used to evaluate the shower profile at some given distance(s) `xs` from the start position.
+`shos` will be a list of `Shower1D` objects, which is a simple container that consists of the amplitude and 1D shape of the Cherenkov-weighted track length. Its `.dldx(xs)` method can be used to evaluate the shower profile at some given distance(s) `xs` from the start position.
