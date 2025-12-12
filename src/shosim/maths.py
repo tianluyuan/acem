@@ -423,3 +423,22 @@ class BSpline3D:
             res_b = (l_b + h_b)/2
         _res = np.asarray([res_a.reshape(-1), res_b.reshape(-1)]).T
         return _res[0] if size is None else _res
+
+    def _legacy_eval(self,
+                     aprime: float | npt.ArrayLike,
+                     bprime: float | npt.ArrayLike,
+                     logE: float | npt.ArrayLike) -> np.ndarray:
+        a_k, b_k, E_k = self.bspl.t
+        a_i = np.searchsorted(a_k[3:-3], aprime, side='right')
+        b_i = np.searchsorted(b_k[3:-3], bprime, side='right')
+        E_i = np.searchsorted(E_k[3:-3], logE, side='right')
+
+        a_i -= (a_i > self.c_poly.shape[0]) # so that things don't break at the upper boundaries
+        b_i -= (b_i > self.c_poly.shape[1])
+        E_i -= (E_i > self.c_poly.shape[2])
+        Z = 0.
+        for l in range(4):
+            for m in range(4):
+                for n in range(4):
+                    Z += self.c_poly[a_i-1,b_i-1,E_i-1,l,m,n] * aprime**l * bprime**m * logE**n
+        return Z

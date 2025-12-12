@@ -181,6 +181,18 @@ class Parametrization1D(ModelBase):
     while exposing convenience functions to sample / obtain Shower1D objects.
     
     Based on: TBD
+
+    >>> a = Parametrization1D(media.ICE)
+    >>> x = np.linspace(0, 1, 100)
+    >>> y = np.linspace(0, 1, 100)
+    >>> X, Y = np.meshgrid(x, y)
+    >>> for pdg in a.THETAS:
+    ...     log_elo = 0 if pdg in [11, 22] else 1
+    ...     bspl = a.THETAS[pdg]
+    ...     for en in np.linspace(log_elo, 6, 100):
+    ...         Z0 = bspl(X, Y, en)
+    ...         Z1 = bspl._legacy_eval(X, Y, en)
+    ...         assert np.all(np.isclose(np.exp(Z0), np.exp(Z1), rtol=0.002))
     """
     @staticmethod
     def load_ltots() -> Dict[int, np.lib.npyio.NpzFile]:
@@ -268,7 +280,7 @@ class Parametrization1D(ModelBase):
         ...     for en in np.linspace(1, 6, 10):
         ...         ltot_a = a.ltot_dist(pdg, 10**en).mean()
         ...         ltot_diff = np.abs(ltot_a - b.ltot_dist(pdg, 10**en).mean())
-        ...         assert ltot_diff / ltot_a < 0.2
+        ...         assert ltot_diff / ltot_a < 0.15
         """
         ltpars = self.LTOTS[self._converter(pdg)]
         # since the fit is performed in log-space, distribution
