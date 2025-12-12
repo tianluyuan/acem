@@ -1,5 +1,6 @@
 TODO: fill in and add LICENSE
-[![Status](https://github.com/tianluyuan/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/shosim/actions)
+
+[![Status](https://github.com/tianluyuan/shosim/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/shosim/actions)
 
 # shosim
 
