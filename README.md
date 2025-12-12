@@ -1,6 +1,7 @@
 TODO: fill in and add LICENSE
+[![Status](https://github.com/tianluyuan/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/shosim/actions)
 
-# Shosim
+# shosim
 
 `shosim` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
 
