@@ -177,7 +177,7 @@ class BSpline3D:
         ----------
         aprime: first parameter for gamma distribution, a', transformed to lie on [0, 1]
         bprime: second parameter for gamma distribution, b', transformed to lie on [0, 1]
-        logE: primary particle energy in log10(logE [GeV])
+        logE: primary particle energy in log10(E [GeV])
 
         Returns
         -------
@@ -185,7 +185,7 @@ class BSpline3D:
 
         Notes
         -----
-        The return values correspond to ln(pdf(a', b'| logE))
+        The return values correspond to ln(pdf(a', b'; logE))
         """
         A, B, LogE = np.broadcast_arrays(aprime, bprime, logE)
         return self.bspl(np.asarray([A, B, LogE]).T).T
@@ -433,7 +433,7 @@ class BSpline3D:
         ----------
         aprime: first parameter for gamma distribution, a', transformed to lie on [0, 1]
         bprime: second parameter for gamma distribution, b', transformed to lie on [0, 1]
-        logE: primary particle energy in log10(logE [GeV])
+        logE: primary particle energy in log10(E [GeV])
 
         Returns
         -------
@@ -441,7 +441,7 @@ class BSpline3D:
 
         Notes
         -----
-        The return values correspond to ln(pdf(a', b'| logE))
+        The return values correspond to ln(pdf(a', b'; logE))
         """
         a_k, b_k, E_k = self.bspl.t
         a_i = np.searchsorted(a_k[3:-3], aprime, side='right')
