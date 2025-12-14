@@ -21,7 +21,7 @@ cd misc/scripts/
 ./check.py 3 42 (energy at 1TeV, initial seed of 42)
 ```
 
-If you prefer to not clone the repo it's possible to install directly from github with
+It's also possible to install directly from github with
 
 ```bash
 pip install git+https://github.com/pathtorepo/shosim
