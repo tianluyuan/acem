@@ -16,7 +16,7 @@ SPGP_LABEL = r"s_p g_p"
 def fig1():
     plt.clf()
     ene = 1.0e3
-    npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    np1 = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
 
     df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
     df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
@@ -26,7 +26,7 @@ def fig1():
     nbins = int(df1.iloc[0]["Zbins"])
     xs = (np.arange(nbins) + 0.5) * df1.iloc[0]["Zwidth"]
     for _ in range(4):
-        plt.plot(xs, npem[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
+        plt.plot(xs, np1[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
@@ -40,7 +40,7 @@ def fig1():
     plt.savefig("fig/paper/fig1a.png", bbox_inches="tight")
 
     plt.clf()
-    bins = np.linspace(3e5, df1["ltot"].max(), 100).tolist()
+    bins = np.linspace(3e5, max(df1["ltot"].max(), df2["ltot"].max()), 100).tolist()
     plt.hist(
         df1["ltot"],
         bins=bins,
@@ -56,12 +56,13 @@ def fig1():
         label=r"1 TeV $\pi^+$ (FLUKA)",
     )
 
-    xs = np.linspace(bins[0], bins[-1], 1000)
+    ul = bins[-1]*1.02
+    xs = np.linspace(bins[0], ul, 1000)
     plt.plot(xs, rwth.ltot_dist(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013)")
     plt.plot(xs, rwth.ltot_dist(211, ene).pdf(xs), "k:", label=r"1 TeV $\pi^+$ (Rädel 2012)")
 
     plt.legend(loc="upper left")
-    plt.xlim(xmin=bins[0])
+    plt.xlim(bins[0], ul)
     plt.ylim(ymin=5e-8)
     plt.yscale("log")
     plt.ylabel("Density [1/cm]")
@@ -74,8 +75,8 @@ def fig1():
 def fig2():
     plt.clf()
     ene = 1.0e3
-    npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
-    nppi = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
+    np1 = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    np2 = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
     df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
     df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
@@ -87,14 +88,14 @@ def fig2():
     nruns = 100
     for _ in range(nruns):
         plt.plot(xs,
-                 npem[_, :nbins] / npem[_, nbins+1],
+                 np1[_, :nbins] / np1[_, nbins+1],
                  color=colors[0],
                  label=rf"1 TeV $e^-$ ({nruns} runs)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
     for _ in range(nruns):
         plt.plot(xs,
-                 nppi[_, :nbins] / nppi[_, nbins+1],
+                 np2[_, :nbins] / np2[_, nbins+1],
                  color=colors[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} runs)" if _==0 else None,
                  linewidth=0.5,
@@ -209,8 +210,8 @@ def fig3():
 def fig4():
     plt.clf()
     ene = 1.0e3
-    npem = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
-    nppi = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
+    np1 = util.load_npy(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
+    np2 = util.load_npy(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
 
     df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
 
@@ -224,8 +225,8 @@ def fig4():
     a_ems = []
     b_ems = []
     for _ in range(nruns):
-        a_em = npem[_, nbins+2]
-        b_em = npem[_, nbins+3]
+        a_em = np1[_, nbins+2]
+        b_em = np1[_, nbins+3]
         plt.plot(xs,
                  stats.gamma(
                      a_em,
@@ -239,8 +240,8 @@ def fig4():
     a_pis = []
     b_pis = []
     for _ in range(nruns):
-        a_pi = nppi[_, nbins+2]
-        b_pi = nppi[_, nbins+3]
+        a_pi = np2[_, nbins+2]
+        b_pi = np2[_, nbins+3]
         plt.plot(xs,
                  stats.gamma(
                      a_pi,
@@ -378,7 +379,7 @@ def fig6():
     ene = 1.0e3
     df1 = util.load_csv(f"fluka/DataOutputs_ELECTRON/ELECTRON_{util.format_energy(ene)}.csv", False)
     df2 = util.load_csv(f"fluka/DataOutputs_PION+/PION+_{util.format_energy(ene)}.csv", False)
-    bins = np.linspace(3e5, df1["ltot"].max(), 100).tolist()
+    bins = np.linspace(3e5, max(df1["ltot"].max(), df2["ltot"].max()), 100).tolist()
     plt.clf()
     plt.hist(
         df1["ltot"],
@@ -395,13 +396,14 @@ def fig6():
         label=r"1 TeV $\pi^+$ (FLUKA)",
     )
 
-    xs = np.linspace(bins[0], bins[-1], 1000)
+    ul = 1.02*bins[-1]
+    xs = np.linspace(bins[0], ul, 1000)
     par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, par.ltot_dist(11, ene).pdf(xs), "--", color=colors[0], label=r"1 TeV $e^-$ (model)")
     plt.plot(xs, par.ltot_dist(211, ene).pdf(xs), ":", color=colors[1], label=r"1 TeV $\pi^+$ (model)")
 
     plt.legend(loc="upper left")
-    plt.xlim(xmin=bins[0])
+    plt.xlim(bins[0], ul)
     plt.ylim(ymin=5e-8)
     plt.yscale("log")
     plt.ylabel("Density [1/cm]")
@@ -412,13 +414,48 @@ def fig6():
 
 
 def fig7():
-    ene = 1e1
-    df1 = util.load_csv(f"fluka/DataOutputs_KAON+/KAON+_{util.format_energy(ene)}.csv", False)
-    df2 = util.load_csv(f"fluka/DataOutputs_KAONSHRT/KAONSHRT_{util.format_energy(ene)}.csv", False)
-    bins = np.linspace(0, df1["ltot"].max(), 100).tolist()
+    ene = 1e3
+
+    fkp = "KAON+"
+    fks = "KAONSHRT"
+    tex1 = pdg.PDG2LATEX[pdg.FLUKA2PDG[fkp]]
+    tex2 = pdg.PDG2LATEX[pdg.FLUKA2PDG[fks]]
+    np1 = util.load_npy(f"fluka/DataOutputs_{fkp}/{fkp}_{util.format_energy(ene)}.csv", False)
+    np2 = util.load_npy(f"fluka/DataOutputs_{fks}/{fks}_{util.format_energy(ene)}.csv", False)
+
+    # sorted by numpeaks
+    np1 = np1[np.argsort(np1[:,507])]
+    np2 = np2[np.argsort(np2[:,507])]
+    nbins = int(np1[0,509])
+
+    xs = (np.arange(nbins) + 0.5) * np1[0,508]
+    for i, (npx, tex) in enumerate(zip([np1, np2], [tex1, tex2])):
+        plt.plot(xs,
+                 npx[-1, :nbins]/npx[-1, nbins+1],
+                 label=rf"1 TeV ${tex}$ (FLUKA)")
+        _a = npx[-1, nbins+2]
+        _b = npx[-1, nbins+3]
+        plt.plot(xs,
+                 stats.gamma(
+                     _a,
+                     scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/_b).pdf(xs),
+                 color=colors[i],
+                 label=rf"1 TeV ${tex}$ (fit)",
+                 linestyle='--')
+    
+    plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
+    plt.xlabel(r"$x$ [cm]")
+    plt.xlim(0, 3000)
+    plt.ylim(ymin=0)
+    plt.legend()
+    plt.savefig("fig/paper/fig7a.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig7a.png", bbox_inches="tight")
+    
+    ene = 1.e1
+    df1 = util.load_csv(f"fluka/DataOutputs_{fkp}/{fkp}_{util.format_energy(ene)}.csv", False)
+    df2 = util.load_csv(f"fluka/DataOutputs_{fks}/{fks}_{util.format_energy(ene)}.csv", False)
+    bins = np.linspace(0, max(df1["ltot"].max(), df2["ltot"].max()), 100).tolist()
     plt.clf()
-    tex1 = pdg.PDG2LATEX[pdg.FLUKA2PDG["KAON+"]]
-    tex2 = pdg.PDG2LATEX[pdg.FLUKA2PDG["KAONSHRT"]]
     plt.hist(
         df1["ltot"],
         bins=bins,
@@ -434,13 +471,16 @@ def fig7():
         label=rf"10 GeV ${tex2}$ (FLUKA)",
     )
 
-    xs = np.linspace(bins[0], bins[-1], 1000)
+    ul = 1.03*bins[-1]
+    xs = np.linspace(bins[0], ul, 1000)
     par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG["KAON+"], ene).pdf(xs), "--", color=colors[0], label=rf"10 GeV ${tex1}$ (model)")
-    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG["KAONSHRT"], ene).pdf(xs), ":", color=colors[1], label=rf"10 GeV ${tex2}+$ (model)")
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fkp], ene).pdf(xs), "--", color=colors[0], label=rf"10 GeV ${tex1}$ (model)")
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fks], ene).pdf(xs), ":", color=colors[1], label=rf"10 GeV ${tex2}+$ (model)")
 
     plt.legend(loc="upper left")
-    plt.xlim(xmin=bins[0])
+    plt.xlim(bins[0], ul)
+    plt.yscale('log')
+    plt.ylim(1e-6, 4e-2)
     plt.ylabel("Density [1/cm]")
     plt.xlabel(rf"${LTOT_LABEL}$ [cm]")
     plt.savefig("fig/paper/fig7b.pdf", bbox_inches="tight")
@@ -449,9 +489,9 @@ def fig7():
     
 if __name__ == "__main__":
     fig7()
-    # fig6()
+    fig6()
     # fig5()
     # fig4()
     # fig3()
     # fig2()
-    # fig1()
+    fig1()
