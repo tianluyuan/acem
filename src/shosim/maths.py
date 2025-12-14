@@ -428,6 +428,21 @@ class BSpline3D:
                      aprime: float | npt.ArrayLike,
                      bprime: float | npt.ArrayLike,
                      logE: float | npt.ArrayLike) -> np.ndarray:
+        """
+        Parameters
+        ----------
+        aprime: first parameter for gamma distribution, a', transformed to lie on [0, 1]
+        bprime: second parameter for gamma distribution, b', transformed to lie on [0, 1]
+        logE: primary particle energy in log10(logE [GeV])
+
+        Returns
+        -------
+        ndarray: Result of evaluating BSpline at the provided a,b,logE values
+
+        Notes
+        -----
+        The return values correspond to ln(pdf(a', b'| logE))
+        """
         a_k, b_k, E_k = self.bspl.t
         a_i = np.searchsorted(a_k[3:-3], aprime, side='right')
         b_i = np.searchsorted(b_k[3:-3], bprime, side='right')

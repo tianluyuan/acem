@@ -180,6 +180,18 @@ class Parametrization1D(ModelBase):
     Handles the loading of parameters that govern the amplitude and shape distributions,
     while exposing convenience functions to sample / obtain Shower1D objects.
     
+    Parameters
+    ----------
+    medium: a shosim.media.Medium object with fixed density and nphase
+    converter: callable that converts PDG codes to those available (optional)
+    random_state: a numpy random number generator (optional)
+
+    Returns
+    -------
+    ret: a Parametrization1D object
+
+    Notes
+    -----
     Based on: TBD
 
     >>> a = Parametrization1D(media.ICE)
@@ -193,6 +205,7 @@ class Parametrization1D(ModelBase):
     ...         Z0 = bspl(X, Y, en)
     ...         Z1 = bspl._legacy_eval(X, Y, en)
     ...         assert np.all(np.isclose(np.exp(Z0), np.exp(Z1), rtol=0.002))
+    ...         assert np.isclose(bspl.integrate_grid(en).sum(), 1., atol=0.05)
     """
     @staticmethod
     def load_ltots() -> Dict[int, np.lib.npyio.NpzFile]:
@@ -226,11 +239,15 @@ class Parametrization1D(ModelBase):
     def __init__(self, medium: media.Medium,
                  converter: Callable[[int], int] | None=None,
                  random_state: Generator | None=None):
+        if set(self.LTOTS.keys()) != set(self.THETAS.keys()):
+            raise RuntimeError("Set of particles in LTOT and THETAS do not agree")
+
         self.medium: media.Medium = medium
         self._rng: Generator = np.random.default_rng() if random_state is None else random_state
         self._converter: Callable = self._default_converter if converter is None else converter
         self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
-        assert self._scale >= 0.
+        if self._scale < 0.:
+            raise RuntimeError("The medium definition results in a negative rescale factor")
     
     def _default_converter(self, pdg: int):
         """
@@ -241,7 +258,7 @@ class Parametrization1D(ModelBase):
         equivalent to their particle counterparts.
         * K0 is treated as a 0.5 mixture of K0_L and K0_S
 
-        User defined converters can be passed as an argument when
+        User-defined converters can be passed as an argument 
         during instantiation
         """
         _pdg = abs(pdg)
@@ -284,7 +301,7 @@ class Parametrization1D(ModelBase):
         """
         ltpars = self.LTOTS[self._converter(pdg)]
         # since the fit is performed in log-space, distribution
-        # parameters with all-negative values are abs'd the stored 's'
+        # parameters with all-negative values are abs'd and the stored 's'
         # keeps track of the final sign to apply
         sgns = ltpars['s']
         if len(sgns) == 3:
