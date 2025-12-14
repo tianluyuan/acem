@@ -7,8 +7,6 @@ on:
       - '**.md'
       - '**.ipynb'
       - 'misc/**'
-      - '.github/workflows/publish.yml'
-      - '.github/dependabot.yml'
       - 'LICENSE'
   pull_request:
     branches: [ main ]
@@ -16,8 +14,6 @@ on:
       - '**.md'
       - '**.ipynb'
       - 'misc/**'
-      - '.github/workflows/publish.yml'
-      - '.github/dependabot.yml'
       - 'LICENSE'
   schedule:
     - cron:  '13 7 * * 2'
@@ -54,13 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Final Results
     needs: [checks]
-    if: >-
-      ${{
-      always() &&
-      (contains(needs.*.result, 'success') ||
-      contains(needs.*.result, 'failure') ||
-      contains(needs.*.result, 'cancelled'))
-      }}
+    if: always()
     steps:
       - run: exit 1
         # see https://stackoverflow.com/a/67532120/4907315
