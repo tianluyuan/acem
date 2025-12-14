@@ -9,7 +9,7 @@ from scipy import stats, interpolate
 from scipy.stats._distn_infrastructure import rv_frozen
 from . import media
 from .pdg import FLUKA2PDG
-from .maths import efn, lin, qdt, cbc, qrt, qnt, sxt, a, b, BSpline3D
+from .maths import a, b, BSpline3D
 
 
 def ltot_scale(m0: media.Medium, m1: media.Medium):
@@ -294,24 +294,9 @@ class Parametrization1D(ModelBase):
         else:
             raise RuntimeError('Unable to match l_tot distributions')
 
-        sdist_args = []
-        for i, sgn in enumerate(sgns):
-            _p = ltpars[f'p{i}']
-            if len(_p) == 2:
-                _fn = lin
-            elif len(_p) == 3:
-                _fn = qdt
-            elif len(_p) == 4:
-                _fn = cbc
-            elif len(_p) == 5:
-                _fn = qrt
-            elif len(_p) == 6:
-                _fn = qnt
-            elif len(_p) == 7:
-                _fn = sxt
-            else:
-                raise RuntimeError('Unable to match parameters to function')
-            sdist_args.append(sgn * efn(energy, _fn, *_p))
+        sdist_args = [sgn * np.exp(
+            np.polyval(ltpars[f'p{i}'][::-1], np.log10(energy)))
+                      for i, sgn in enumerate(sgns)]
         # scipy distributions are loc-scale families so we only need
         # to rescale the loc and scale parameters
         sdist_args[-1] *= self._scale
