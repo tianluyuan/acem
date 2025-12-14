@@ -338,7 +338,7 @@ class Parametrization1D(ModelBase):
         The shape is taken as the average over parameters a and b, which differs
         from the average over 1/ltot * dl/dx
         """
-        ap, bp = self.THETAS[pdg].mean(np.log10(energy))
+        ap, bp = self.THETAS[self._converter(pdg)].mean(np.log10(energy))
         return Shower1D(self.ltot_dist(pdg, energy).mean(), self._shape(a(ap), b(bp)))
     
     def sample(self,
@@ -373,7 +373,10 @@ class Parametrization1D(ModelBase):
         """
         _size = 1 if size is None else size
         ltots = self.ltot_dist(pdg, energy).rvs(_size, random_state=self._rng)
-        aps, bps = self.THETAS[pdg].sample(np.log10(energy), _size, random_state=self._rng).T
+        aps, bps = self.THETAS[self._converter(pdg)].sample(
+            np.log10(energy),
+            _size,
+            random_state=self._rng).T
 
         _samp = [Shower1D(ltot, self._shape(a(ap), b(bp)))
                  for ltot, ap, bp in zip(ltots, aps, bps)]
