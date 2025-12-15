@@ -433,6 +433,8 @@ def fig7():
         plt.plot(xs,
                  npx[-1, :nbins]/npx[-1, nbins+1],
                  label=rf"1 TeV ${tex}$ (FLUKA)")
+
+    for i, (npx, tex, lst) in enumerate(zip([np1, np2], [tex1, tex2], ['--', ':'])):
         _a = npx[-1, nbins+2]
         _b = npx[-1, nbins+3]
         plt.plot(xs,
@@ -441,7 +443,7 @@ def fig7():
                      scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/_b).pdf(xs),
                  color=colors[i],
                  label=rf"1 TeV ${tex}$ (fit)",
-                 linestyle='--')
+                 linestyle=lst)
     
     plt.ylabel(rf'${LTOT_LABEL}^{{-1}}{DLDX_LABEL}$ [1/cm]')
     plt.xlabel(r"$x$ [cm]")
@@ -489,9 +491,9 @@ def fig7():
     
 if __name__ == "__main__":
     fig7()
-    fig6()
+    # fig6()
     # fig5()
     # fig4()
     # fig3()
     # fig2()
-    fig1()
+    # fig1()
