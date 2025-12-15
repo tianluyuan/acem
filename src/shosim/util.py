@@ -9,6 +9,15 @@ except ImportError:
     HAVE_PANDAS = False
 
 
+def get_header(nzbins, nzwide):
+    return [str(i) for i in np.linspace(0,nzbins * nzwide,nzbins)] + \
+        ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
+
+
+def get_dtype(header):
+    return [(_, 'i4' if _ in ['Zbins', 'NumPeaks'] else 'f8') for _ in header]
+
+
 def format_energy(num: float) -> str:
     num_str = "{:.5e}".format(num)
     coefficient, exponent = num_str.split('e')
@@ -42,9 +51,7 @@ def load_csv(fpath: str | Path, clean: bool=True) -> 'pd.DataFrame | pd.Series':
     nzbins = int(_a[0, -6])
     nzwide = _a[0, -7]
 
-    header = [str(i) for i in np.linspace(0,nzbins * nzwide,nzbins)] + \
-        ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
-    df = pd.read_csv(fpath, names=header)
+    df = pd.read_csv(fpath, names=get_header(nzbins, nzwide))
     # DEBUG
     # df['Zbins'] = 500
     # df['Zwidth'] = 10
