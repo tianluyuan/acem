@@ -1,7 +1,7 @@
 from pathlib import Path
 from collections import OrderedDict
 import numpy as np
-from typing import Dict, Callable, TypeVar
+from typing import Callable, TypeVar
 try:
     import pandas as pd
     HAVE_PANDAS = True
@@ -9,12 +9,17 @@ except ImportError:
     HAVE_PANDAS = False
 
 
-def get_header(nzbins, nzwide):
+def get_header(fpath: str | Path):
+    # probe number of zbins
+    _a = np.loadtxt(fpath, delimiter=',', max_rows=1)
+    nzbins = int(_a[-6])
+    nzwide = _a[-7]
+
     return [str(i) for i in np.linspace(0,nzbins * nzwide,nzbins)] + \
         ['Energy','ltot','gammaA','gammaB','covAA','covAB','covBB','NumPeaks','Zwidth','Zbins','Peak1','Peak2','Peak3','Peak4','Peak5']
 
 
-def get_dtype(header):
+def get_dtype(header: list[str]) -> list[tuple[str, str]]:
     return [(_, 'i4' if _ in ['Zbins', 'NumPeaks'] else 'f8') for _ in header]
 
 
@@ -46,12 +51,8 @@ def load_csv(fpath: str | Path, clean: bool=True) -> 'pd.DataFrame | pd.Series':
         raise RuntimeError(
             "The 'load_csv' function requires the 'pandas' package to be installed."
         )
-    # probe number of zbins
-    _a = load_npy(fpath, clean)
-    nzbins = int(_a[0, -6])
-    nzwide = _a[0, -7]
 
-    df = pd.read_csv(fpath, names=get_header(nzbins, nzwide))
+    df = pd.read_csv(fpath, names=get_header(fpath))
     # DEBUG
     # df['Zbins'] = 500
     # df['Zwidth'] = 10
@@ -68,7 +69,7 @@ T = TypeVar('T')
 def load_batch(pattern: str,
                *args,
                loader: Callable[..., T]=load_csv,
-               **kwargs) -> Dict[float, T]:
+               **kwargs) -> dict[float, T]:
     fglobs = Path('.').glob(pattern)
     edict = {float(_.stem.split('_')[-1]):_  for _ in fglobs}
     Dat = OrderedDict()

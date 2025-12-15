@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from importlib.resources import files, as_file
-from typing import Callable, Dict, NamedTuple, List
+from typing import Callable, NamedTuple
 import numpy as np
 from numpy.random import Generator
 import numpy.typing as npt
@@ -42,7 +42,7 @@ class ModelBase(ABC):
     def sample(self,
                pdg: int,
                energy: float,
-               size: None | int) -> Shower1D | List[Shower1D]:
+               size: None | int) -> Shower1D | list[Shower1D]:
         pass
 
 
@@ -53,37 +53,37 @@ class RWParametrization1D(ModelBase):
     Based on: https://doi.org/10.1016/j.astropartphys.2013.01.015
     """
 
-    MEAN_ALPHAS: Dict[int, float] = {
+    MEAN_ALPHAS: dict[int, float] = {
         11: 532.07078881,
         -11: 532.11320598,
         22: 532.08540905,
         211: 333.55182722
     }
-    MEAN_BETAS: Dict[int, float] = {
+    MEAN_BETAS: dict[int, float] = {
         11: 1.00000211,
         -11: 0.99999254,
         22: 0.99999877,
         211: 1.03662217
     }
-    SIGMA_ALPHAS: Dict[int, float] = {
+    SIGMA_ALPHAS: dict[int, float] = {
         11: 5.78170887,
         -11: 5.73419669,
         22: 5.66586567,
         211: 119.20455395
     }
-    SIGMA_BETAS: Dict[int, float] = {
+    SIGMA_BETAS: dict[int, float] = {
         11: 0.5,
         -11: 0.5,
         22: 0.5,
         211: 0.80772057
     }
-    GAMMA_A: Dict[int, Callable] = {
+    GAMMA_A: dict[int, Callable] = {
         11: lambda x: 2.01849 + 0.63176 * np.log(x),
         -11: lambda x: 2.00035 + 0.63190 * np.log(x),
         22: lambda x: 2.83923 + 0.58209 * np.log(x),
         211: lambda x: 1.58357292 + 0.41886807 * np.log(x),
     }
-    GAMMA_B: Dict[int, float] = {
+    GAMMA_B: dict[int, float] = {
         11: 0.63207,
         -11: 0.63008,
         22: 0.64526,
@@ -149,7 +149,7 @@ class RWParametrization1D(ModelBase):
     def sample(self,
                pdg: int,
                energy: float,
-               size: None | int=None) -> Shower1D | List[Shower1D]:
+               size: None | int=None) -> Shower1D | list[Shower1D]:
         """
         Samples an individual Shower1D object for a specified
         particle type and energy. Only ltot is randomly sampled.
@@ -208,7 +208,7 @@ class Parametrization1D(ModelBase):
     ...         assert np.isclose(bspl.integrate_grid(en).sum(), 1., atol=0.05)
     """
     @staticmethod
-    def load_ltots() -> Dict[int, np.lib.npyio.NpzFile]:
+    def load_ltots() -> dict[int, np.lib.npyio.NpzFile]:
         data = {}
         for entry in (files("shosim") / "resources" / "ltot").iterdir():
             if not entry.is_file():
@@ -218,7 +218,7 @@ class Parametrization1D(ModelBase):
         return data
 
     @staticmethod
-    def load_thetas() -> Dict[int, BSpline3D]:
+    def load_thetas() -> dict[int, BSpline3D]:
         data = {}
         for entry in (files("shosim") / "resources" / "theta").iterdir():
             if not entry.is_file():
@@ -231,8 +231,8 @@ class Parametrization1D(ModelBase):
                 data[FLUKA2PDG[Path(entry.name).stem]] = BSpline3D(interpolate.NdBSpline(t, c, k, extrapolate=False))
         return data
 
-    LTOTS: Dict[int, np.lib.npyio.NpzFile] = load_ltots()
-    THETAS: Dict[int, BSpline3D] = load_thetas()
+    LTOTS: dict[int, np.lib.npyio.NpzFile] = load_ltots()
+    THETAS: dict[int, BSpline3D] = load_thetas()
     # density and nphase used in FLUKA MC
     FLUKA_MEDIUM = media.Medium(0.9216, 1.33)
 
@@ -346,7 +346,7 @@ class Parametrization1D(ModelBase):
     def sample(self,
                pdg: int,
                energy: float,
-               size: None | int=None) -> Shower1D | List[Shower1D]:
+               size: None | int=None) -> Shower1D | list[Shower1D]:
         """
         Samples an individual Shower1D object for a specified
         particle type and energy.
