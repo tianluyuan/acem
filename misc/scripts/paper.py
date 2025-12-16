@@ -17,6 +17,7 @@ PARTICLES = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PR
 PLABELS = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
 PCOLORS = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2], colors[3], colors[3], colors[3], colors[3]]
 PLINEST = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-.", "-", "--", ":", "-."]
+PMARKRS = ['o', 's', '*', 'x'] * 3
 
 
 def fig1():
@@ -372,7 +373,7 @@ def fig6():
                      label=None)
     plt.yscale('log')
     plt.xscale('log')
-    plt.legend(ncol=2)
+    plt.legend(ncol=2, markerscale=3)
     plt.xlabel(r'$E$ [GeV]')
     plt.ylabel("Parameter values")
     plt.xlim(1., 1.e6)
@@ -551,7 +552,7 @@ def fig8():
         j = icolumn(particle)
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv',
                               loader=util.load_npy,
-                              clean=True)
+                              clean=False)
         _pdg = pdg.FLUKA2PDG[particle]
         ssrs, ssrw = get_ssr(Dat, _pdg)
 
@@ -575,32 +576,55 @@ def fig8():
         ax[0][j].set_xlim(1., 1.e6)
 
         ks_l, ks_a, ks_b = get_ks(Dat, _pdg)
-        ax[1][0].plot(Dat.keys(), [_.statistic for _ in ks_a],
-                      c=PCOLORS[i],
-                      ls=PLINEST[i],
-                      linewidth=1.5)
-        ax[1][1].plot(Dat.keys(), [_.statistic for _ in ks_b],
-                      c=PCOLORS[i],
-                      ls=PLINEST[i],
-                      linewidth=1.5)
-        ax[1][2].plot(Dat.keys(), [_.statistic for _ in ks_l],
-                      c=PCOLORS[i],
-                      ls=PLINEST[i],
-                      linewidth=1.5)
+        ax[1][0].scatter(Dat.keys(), [_.statistic for _ in ks_a],
+                         c=PCOLORS[i],
+                         marker=PMARKRS[i],
+                         label=rf"${PLABELS[i]}$",
+                         s=1.5)
+        ax[1][1].scatter(Dat.keys(), [_.statistic for _ in ks_b],
+                         c=PCOLORS[i],
+                         marker=PMARKRS[i],
+                         s=1.5)
+        ax[1][2].scatter(Dat.keys(), [_.statistic for _ in ks_l],
+                         c=PCOLORS[i],
+                         marker=PMARKRS[i],
+                         s=1.5)
 
     _d = dict(fontsize=18,
               verticalalignment='bottom',
               horizontalalignment='right',
               color='black')
-    ax[1][0].set_title(
+    ax[1][0].text(
+        0.1,
+        0.9,
         r"$a'$",
+        transform=ax[1][0].transAxes,
+        **_d
     )
-    ax[1][1].set_title(
+    ax[1][0].legend(ncol=3, markerscale=3)
+    ax[1][1].text(
+        0.1,
+        0.9,
         r"$b'$",
+        transform=ax[1][1].transAxes,
+        **_d
     )
-    ax[1][2].set_title(
+    ax[1][2].text(
+        0.13,
+        0.9,
         rf"${LTOT_LABEL}$",
+        transform=ax[1][2].transAxes,
+        **_d
     )
+    # ax[1][0].set_title(
+    #     r"$a'$",
+    # )
+    # ax[1][1].set_title(
+    #     r"$b'$",
+    # )
+    # ax[1][2].set_title(
+    #     rf"${LTOT_LABEL}$",
+    # )
 
     ax[0][0].set_yscale('log')
     ax[0][0].set_ylabel('SSR')
