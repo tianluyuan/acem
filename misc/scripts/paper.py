@@ -547,7 +547,7 @@ def fig8():
     fig, ax = plt.subplots(nrows=2, ncols=3, sharey='row', sharex='col', figsize=(_wide*3.1, _height*2.))
     handles = []
     labels = []
-    for i, particle in enumerate(["ELECTRON"]):#PARTICLES):
+    for i, particle in enumerate(PARTICLES):
         j = icolumn(particle)
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv',
                               loader=util.load_npy,
@@ -592,31 +592,19 @@ def fig8():
               verticalalignment='bottom',
               horizontalalignment='right',
               color='black')
-    ax[1][0].text(
-        0.96,
-        0.04,
+    ax[1][0].set_title(
         r"$a'$",
-        transform=ax[1][0].transAxes,
-        **_d
     )
-    ax[1][1].text(
-        0.96,
-        0.04,
+    ax[1][1].set_title(
         r"$b'$",
-        transform=ax[1][1].transAxes,
-        **_d
     )
-    ax[1][2].text(
-        0.96,
-        0.04,
+    ax[1][2].set_title(
         rf"${LTOT_LABEL}$",
-        transform=ax[1][2].transAxes,
-        **_d
     )
 
     ax[0][0].set_yscale('log')
     ax[0][0].set_ylabel('SSR')
-    # ax[1][0].set_ylim(0, 1)
+    ax[1][0].set_ylim(ymin=0.)
     ax[1][0].set_ylabel('KS statistic')
     [ax[1][_].set_xscale('log') for _ in range(3)]
     [ax[1][_].set_xlim(1., 1.e6) for _ in range(3)]
