@@ -13,6 +13,12 @@ DLDX_LABEL = r"\text{d}\hat{\ell}/\text{d}x"
 LTOT_LABEL = r"\hat{\ell}_\text{tot}"
 SPGP_LABEL = r"s_p g_p"
 
+PARTICLES = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "SIGMA+", "SIGMA-", "LAMBDA", "XSIZERO", "XSI-", "OMEGA-"]
+PLABELS = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
+PCOLORS = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2], colors[3], colors[3], colors[3], colors[3]]
+PLINEST = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-.", "-", "--", ":", "-."]
+
+
 def fig1():
     plt.clf()
     ene = 1.0e3
@@ -30,7 +36,7 @@ def fig1():
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
-             label=r"1 TeV $e^-$"+"\n(RW 2013)", linestyle="--")
+             label=r"1 TeV $e^-$"+"\n(RW 2013) 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
@@ -58,7 +64,7 @@ def fig1():
 
     ul = bins[-1]*1.02
     xs = np.linspace(bins[0], ul, 1000)
-    plt.plot(xs, rwth.ltot_dist(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013)")
+    plt.plot(xs, rwth.ltot_dist(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013) 2013)")
     plt.plot(xs, rwth.ltot_dist(211, ene).pdf(xs), "k:", label=r"1 TeV $\pi^+$ (Rädel 2012)")
 
     plt.legend(loc="upper left")
@@ -149,19 +155,15 @@ def fig2():
 
 def fig3():
     plt.clf()
-    particles = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "SIGMA+", "SIGMA-", "LAMBDA", "XSIZERO", "XSI-", "OMEGA-"]
-    plabels = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
-    pcolors = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2], colors[3], colors[3], colors[3], colors[3]]
-    plinest = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-.", "-", "--", ":", "-."]
     fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=plt.gcf().get_size_inches())
-    for i, particle in enumerate(particles):
+    for i, particle in enumerate(PARTICLES):
         dats = util.load_batch(f"fluka/DataOutputs_{particle}/*.csv", loader=util.load_npy, clean=False)
         npeaks1 = np.asarray([(dats[_][:,507]==1).sum() for _ in dats])
         npeaks2 = np.asarray([(dats[_][:,507]==2).sum() for _ in dats])
         npeaksx = np.asarray([((dats[_][:, 507] != 1) & (dats[_][:, 507] != 2)).sum() for _ in dats])
         
         plt.figure(1)
-        plt.plot(dats.keys(), npeaks1/(npeaks1+npeaks2+npeaksx), c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
+        plt.plot(dats.keys(), npeaks1/(npeaks1+npeaks2+npeaksx), c=PCOLORS[i], label=rf"${PLABELS[i]}$", ls=PLINEST[i], linewidth=1.5)
 
         lva = []
         lvb = []
@@ -181,9 +183,9 @@ def fig3():
             lvb.append(rho_matrix[0, 2])
             avb.append(rho_matrix[1, 2])
 
-        ax[0].plot(dats.keys(), lva, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
-        ax[1].plot(dats.keys(), lvb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
-        ax[2].plot(dats.keys(), avb, c=pcolors[i], label=rf"${plabels[i]}$", ls=plinest[i], linewidth=1.5)
+        ax[0].plot(dats.keys(), lva, c=PCOLORS[i], label=rf"${PLABELS[i]}$", ls=PLINEST[i], linewidth=1.5)
+        ax[1].plot(dats.keys(), lvb, c=PCOLORS[i], label=rf"${PLABELS[i]}$", ls=PLINEST[i], linewidth=1.5)
+        ax[2].plot(dats.keys(), avb, c=PCOLORS[i], label=rf"${PLABELS[i]}$", ls=PLINEST[i], linewidth=1.5)
 
     plt.figure(1)
     plt.xscale("log")
@@ -364,14 +366,16 @@ def fig6():
         par_fits = [optimize.curve_fit(_f, log_ens[_sel], np.log(_y[_sel]))[0]
                     for _f, _y in zip(p_fn, results.T)]
         for i, (_f, _y, _p, _m, _l) in enumerate(zip(p_fn, results.T, par_fits, markers, labels)):
-            plt.plot(log_ens[_sel], _y[_sel], _m, color=_c, markersize=2, label=rf'${_l}$')
-            plt.plot(log_ens[~_sel], _y[~_sel], 'x', color=_c, markersize=2)
-            plt.plot(log_ens, np.exp(_f(log_ens, *_p)), color=_c, linewidth=1,
+            plt.plot(10**log_ens[_sel], _y[_sel], _m, color=_c, markersize=2, label=rf'${_l}$')
+            plt.plot(10**log_ens[~_sel], _y[~_sel], 'x', color=_c, markersize=2)
+            plt.plot(10**log_ens, np.exp(_f(log_ens, *_p)), color=_c, linewidth=1,
                      label=None)
     plt.yscale('log')
+    plt.xscale('log')
     plt.legend(ncol=2)
-    plt.xlabel(r'$\log_{10} (E / \mathrm{GeV})$')
+    plt.xlabel(r'$E$ [GeV]')
     plt.ylabel("Parameter values")
+    plt.xlim(1., 1.e6)
     plt.savefig("fig/paper/fig6a.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig6a.png", bbox_inches="tight")
     # end copy from ltot.py
@@ -488,9 +492,147 @@ def fig7():
     plt.savefig("fig/paper/fig7b.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig7b.png", bbox_inches="tight")
     plt.close("all")
+
+
+def fig8():
+    def get_ssr(Dat, _pdg):
+        ssrs = []
+        ssrw = []
+        for ene in Dat.keys():
+            darr = Dat[ene]
+            nbins = int(darr[0,509])
+            bwidt = darr[0,508]
+
+            Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, darr[:,nbins+2])
+            _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, darr[:,nbins+3])
+            parr = stats.gamma(
+                Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
+            ssrs.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
+            if particle in ["ELECTRON", "PION+", "PROTON"]:
+                rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
+                gamm = rwth._shape(_pdg, ene)
+                Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.args[0])
+                _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.kwds['scale'])
+                parr = stats.gamma(
+                    Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
+                ssrw.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
+
+        return ssrs, ssrw
+
+    def icolumn(particle):
+        if particle in ["ELECTRON", "PHOTON"]:
+            return 0
+        if particle in ["PION+", "KAON+", "KAONSHRT", "KAONLONG"]:
+            return 1
+        return 2
+
+    def get_ks(Dat, _pdg):
+        par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM,
+                                      random_state=np.random.default_rng(1))
+        ks_l = []
+        ks_a = []
+        ks_b = []
+        for ene in Dat.keys():
+            shos = par.sample(_pdg, ene, 1000)
+            ltots = [_.ltot for _ in shos]
+            aprim = [_.shape.args[0] for _ in shos]
+            bprim = [par.medium.lrad / _.shape.kwds['scale'] for _ in shos]
+            ks_l.append(stats.ks_2samp(Dat[ene][:, 501], ltots))
+            ks_a.append(stats.ks_2samp(Dat[ene][:, 502], aprim))
+            ks_b.append(stats.ks_2samp(Dat[ene][:, 503], bprim))
+        return ks_l, ks_a, ks_b
+    
+    plt.clf()
+    _wide, _height = plt.gcf().get_size_inches()
+    fig, ax = plt.subplots(nrows=2, ncols=3, sharey='row', sharex='col', figsize=(_wide*3.1, _height*2.))
+    handles = []
+    labels = []
+    for i, particle in enumerate(["ELECTRON"]):#PARTICLES):
+        j = icolumn(particle)
+        Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv',
+                              loader=util.load_npy,
+                              clean=True)
+        _pdg = pdg.FLUKA2PDG[particle]
+        ssrs, ssrw = get_ssr(Dat, _pdg)
+
+        if ssrw:
+            extra_label = "(RW 2013)" if particle in ["ELECTRON", "PHOTON"] else "(Rädel 2012)"
+            ax[0][j].plot(Dat.keys(),
+                          [np.median(_) for _ in ssrw],
+                          c='gray',
+                          label=rf"${PLABELS[i]}$ {extra_label}",
+                          ls=PLINEST[i],
+                          linewidth=1.5)
+            ax[0][j].legend()
+        line, = ax[0][j].plot(Dat.keys(),
+                              [np.median(_) for _ in ssrs],
+                              c=PCOLORS[i],
+                              ls=PLINEST[i],
+                              linewidth=1.5)
+        handles.append(line)
+        labels.append(rf"${PLABELS[i]}$")
+        ax[0][j].set_xscale('log')
+        ax[0][j].set_xlim(1., 1.e6)
+
+        ks_l, ks_a, ks_b = get_ks(Dat, _pdg)
+        ax[1][0].plot(Dat.keys(), [_.statistic for _ in ks_a],
+                      c=PCOLORS[i],
+                      ls=PLINEST[i],
+                      linewidth=1.5)
+        ax[1][1].plot(Dat.keys(), [_.statistic for _ in ks_b],
+                      c=PCOLORS[i],
+                      ls=PLINEST[i],
+                      linewidth=1.5)
+        ax[1][2].plot(Dat.keys(), [_.statistic for _ in ks_l],
+                      c=PCOLORS[i],
+                      ls=PLINEST[i],
+                      linewidth=1.5)
+
+    _d = dict(fontsize=18,
+              verticalalignment='bottom',
+              horizontalalignment='right',
+              color='black')
+    ax[1][0].text(
+        0.96,
+        0.04,
+        r"$a'$",
+        transform=ax[1][0].transAxes,
+        **_d
+    )
+    ax[1][1].text(
+        0.96,
+        0.04,
+        r"$b'$",
+        transform=ax[1][1].transAxes,
+        **_d
+    )
+    ax[1][2].text(
+        0.96,
+        0.04,
+        rf"${LTOT_LABEL}$",
+        transform=ax[1][2].transAxes,
+        **_d
+    )
+
+    ax[0][0].set_yscale('log')
+    ax[0][0].set_ylabel('SSR')
+    # ax[1][0].set_ylim(0, 1)
+    ax[1][0].set_ylabel('KS statistic')
+    [ax[1][_].set_xscale('log') for _ in range(3)]
+    [ax[1][_].set_xlim(1., 1.e6) for _ in range(3)]
+    fig.supxlabel(r"$E$ [GeV]", y=0.02)
+    fig.legend(handles=handles,
+               labels=labels,
+               bbox_to_anchor=(0.5, 0.98),
+               loc='upper center', ncol=(len(labels) + 1)//2)
+    plt.savefig("fig/paper/fig8.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig8.png", bbox_inches="tight")
+    plt.close("all")
+    
     
 if __name__ == "__main__":
-    fig7()
+    fig8()
+    # fig7()
     # fig6()
     # fig5()
     # fig4()
