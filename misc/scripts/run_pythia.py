@@ -1,14 +1,12 @@
-from collections import namedtuple
+#!/usr/bin/env python
+from collections import namedtuple, defaultdict
 from functools import partial
 import pythia8mc
 import numpy as np
 from scipy import stats
-from ian import Sample
-from ian.ltot import efn, qrt, cbc, lin
+from shosim import model, media
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
-
-LRAD = 0.3608 / 0.9216 * 100  # cm
 
 
 def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, target_pdg=2212):
@@ -173,56 +171,29 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
 
 
 def plot_subparticles(xs,
-                      coeffs,
-                      ltpars,
-                      energies,
+                      par,
+                      pids,
+                      enes,
                       vprods,
-                      rng_instance,
                       cmap=plt.cm.jet,
                       minimum=10):
-    colors = cmap(np.linspace(0.25, 0.75, len(energies)+1))
+    colors = cmap(np.linspace(0.25, 0.75, len(enes)+1))
     ys = np.zeros_like(xs)
     emiss = 0
-    ltfns = []
 
-    # since the fit is performed in log-space, distribution parameters with all-negative values are abs'd
-    # the stored 's' keeps track of the final sign to apply
-    sgns = ltpars['s']
-    if len(sgns) == 3:
-        sdist = stats.skewnorm
-    elif len(sgns) == 4:
-        sdist = stats.norminvgauss
-    else:
-        raise RuntimeError('Unable to match distributions')
-
-    for i, sgn in enumerate(sgns):
-        _p = ltpars[f'p{i}']
-        if len(_p) == 2:
-            ltfns.append((lin, sgn, _p))
-        elif len(_p) == 4:
-            ltfns.append((cbc, sgn, _p))
-        elif len(_p) == 5:
-            ltfns.append((qrt, sgn, _p))
-        else:
-            raise RuntimeError('Unable to match parameters to function')
-
-    for i, (energy, vprod) in enumerate(zip(energies, vprods)):
+    for i, (pid, energy, vprod) in enumerate(zip(pids, enes, vprods)):
         if energy < minimum:
             emiss += energy
             continue
-        a, b = Sample.sample_ab(coeffs, energy, 1, rng=rng_instance)
-        ltot = sdist.rvs(*[_sgn * efn(energy, _fn, *_p) for _fn, _sgn, _p in ltfns],
-                         random_state=rng_instance)
-        y = ltot * stats.gamma.pdf(xs, a, loc=vprod.pz()/10, scale=LRAD/b)
+        sho = par.sample(pid, energy)
+        y = sho.dldx(xs - vprod.pz()/10.)
         ys += y
         plt.plot(xs, y, linestyle=':', color=colors[i])
 
     # catch the remainder
     if emiss > minimum:
-        a, b = Sample.sample_ab(coeffs, emiss, 1, rng=rng_instance)
-        ltot = sdist.rvs(*[_sgn * efn(emiss, _fn, *_p) for _fn, _sgn, _p in ltfns],
-                         random_state=rng_instance)
-        y = ltot * stats.gamma.pdf(xs, a, scale=LRAD/b)
+        sho = par.sample(pid, emiss)
+        y = sho.dldx(xs)
         ys += y
         plt.plot(xs, y, linestyle=':', color=colors[i+1])
     return ys
@@ -250,87 +221,62 @@ def pid_with_fallback(pid, available_pids):
 
 if __name__ == '__main__':
     plt.style.use('present')
-    enu = 80000
+    enu = 10000
     pnu = 12
     events = simulate_neutrino_dis(num_events=200,
                                    init_energy_gev=enu,
                                    init_pdg=pnu)
 
-    pdg2fluka = {11:'ELECTRON',
-                 22:'PHOTON',
-                 211:'PION+',
-                 130:'KAONLONG',
-                 310:'KAONSHRT',
-                 321:'KAON+',
-                 # 411:'D+',
-                 2212:'PROTON',
-                 2112:'NEUTRON',
-                 3122:'LAMBDA',
-                 3222:'SIGMA+',
-                 3112:'SIGMA-',
-                 }
-    coefs_all = {}
-    ltots_all = {}
-    for k in pdg2fluka:
-        coefs_all[k] = np.load(f"ian/Coeffs_{pdg2fluka[k]}.npy")
-        ltots_all[k] = np.load(f"ian/ltot_{pdg2fluka[k]}.npz")
+    rng = np.random.default_rng(1234)
+    parm = model.Parametrization1D(media.IC3, random_state=rng)
+    parw = model.RWParametrization1D(media.IC3, random_state=rng)
 
     xs = np.arange(0, 3000.1, 10)
-    rng = np.random.default_rng(1234)
     print(f"Mean inelasticity: {np.mean([sum(_.hadron_energies) for _ in events])/enu}")
     for i, event in enumerate(events):
-        ys = np.zeros_like(xs)
-        for upid in np.unique(np.abs(event.hadron_pids)):
-            # _c = str(upid)[0] == '4'
-            sel = np.abs(event.hadron_pids) == upid
-            _pid = pid_with_fallback(upid, list(pdg2fluka.keys()))
-            ys += plot_subparticles(xs,
-                                    coefs_all.get(upid, coefs_all[_pid]), # if not _c else coefs_all[411]),
-                                    ltots_all.get(upid, ltots_all[_pid]),
-                                    event.hadron_energies[sel],
-                                    event.hadron_vprods[sel],
-                                    rng,
-                                    plt.cm.Blues_r, # if not _c else plt.cm.Greens_r,
-                                    minimum=10)
+        ys = plot_subparticles(xs,
+                               parm,
+                               event.hadron_pids,
+                               event.hadron_energies,
+                               event.hadron_vprods,
+                               plt.cm.Blues_r, # if not _c else plt.cm.Greens_r,
+                               minimum=10)
+
         plt.plot(xs, ys, c='b', label=r'$\sum E_{had}$')
 
         # EM showers
         yg = plot_subparticles(xs,
-                               coefs_all[22],
-                               ltots_all[22],
+                               parm,
+                               [22]*len(event.gamma_energies),
                                event.gamma_energies,
                                event.gamma_vprods,
-                               rng,
                                plt.cm.Oranges_r,
-                               minimum=10)
+                               minimum=1.)
         ye = plot_subparticles(xs,
-                               coefs_all[11],
-                               ltots_all[11],
+                               parm,
+                               [11]*len(event.electron_energies),
                                event.electron_energies,
                                event.electron_vprods,
-                               rng,
                                plt.cm.Purples_r,
-                               minimum=10)
+                               minimum=1.)
         if np.any(ye+yg):
             plt.plot(xs, ye+yg, c='r', label=r'$\sum E_{em}$')
-        plt.plot(xs, ys + yg + ye, c='grey', label=r'Total')
+        plt.plot(xs, ys + yg + ye, c='k', label=r'Total')
 
         # CMC
         # nugen lumps into a single hadron so sum over these for e_hd
         e_hd = sum(event.hadron_energies) + sum(event.gamma_energies)
-        a_hd = 1.58357292+0.41886807 * np.log(e_hd)
-        b_hd = 0.33833116
-        y_hd = e_hd * stats.gamma.pdf(xs, a_hd, scale=LRAD/b_hd)
-        # plt.plot(xs, y_hd, c='b', linestyle='--', label='CMC (had)')
+        show = parw.sample(211, e_hd)
+        y_hd = show.dldx(xs)
+        plt.plot(xs, y_hd, c='b', linestyle='--', label='CMC (had)')
 
         y_em = np.zeros_like(xs)
         if event.is_cc:
             e_em = event.electron_energies[0]
-            a_em = 2.01849 + 0.63176 * np.log(e_em)
-            b_em = 0.63207
-            y_em = e_em * stats.gamma.pdf(xs, a_em, scale=LRAD/b_em)
-            # plt.plot(xs, y_em, c='r', label='CMC (EM)', linestyle='--')
-        # plt.plot(xs, y_hd + y_em, c='grey', linestyle='--', label=r'CMC (total)')
+            show = parw.sample(11, e_em)
+            y_em = show.dldx(xs)
+            plt.plot(xs, y_em, c='r', label='CMC (EM)', linestyle='--')
+        plt.plot(xs, y_hd + y_em, c='grey', linestyle='--', label=r'CMC (total)')
 
         plt.legend()
         plt.title(rf'$E_\nu = {enu / 1e3}$ TeV, PDG={pnu}, $E_{{had}} = {sum(event.hadron_energies)/1e3:.2f}$ TeV')
@@ -339,5 +285,5 @@ if __name__ == '__main__':
         plt.xlabel('[m]')
         plt.ylabel('dl/dx')
         plt.ylim(ymin=0)
-        plt.savefig(f'figs/{i}.png', bbox_inches='tight')
+        plt.savefig(f'fig/pythia/{i}.png', bbox_inches='tight')
         plt.clf()
