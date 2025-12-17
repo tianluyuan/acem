@@ -16,8 +16,8 @@ SPGP_LABEL = r"s_p g_p"
 PARTICLES = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "SIGMA+", "SIGMA-", "LAMBDA", "XSIZERO", "XSI-", "OMEGA-"]
 PLABELS = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
 PCOLORS = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2], colors[3], colors[3], colors[3], colors[3]]
-PLINEST = ["-", "--", "-", "--", ":", "-.", "-", "--", ":", "-.", "-", "--", ":", "-."]
-PMARKRS = ['o', 's', '*', 'x'] * 3
+PLINEST = ["-", "--"] + ["-", "--", ":", "-."] * 3
+PMARKRS = ['o', 's'] + ['o', 's', '^', 'v'] * 3
 
 
 def fig1():
@@ -547,6 +547,7 @@ def fig8():
     _wide, _height = plt.gcf().get_size_inches()
     fig, ax = plt.subplots(nrows=2, ncols=3, sharey='row', sharex='col', figsize=(_wide*3.1, _height*2.))
     handles = []
+    hmarkrs = []
     labels = []
     for i, particle in enumerate(PARTICLES):
         j = icolumn(particle)
@@ -566,34 +567,41 @@ def fig8():
                           linewidth=1.5)
             ax[0][j].legend()
         line, = ax[0][j].plot(Dat.keys(),
-                              [np.median(_) for _ in ssrs],
+                              [np.nanmedian(_) for _ in ssrs],
                               c=PCOLORS[i],
                               ls=PLINEST[i],
                               linewidth=1.5)
-        handles.append(line)
-        labels.append(rf"${PLABELS[i]}$")
         ax[0][j].set_xscale('log')
         ax[0][j].set_xlim(1., 1.e6)
 
         ks_l, ks_a, ks_b = get_ks(Dat, _pdg)
-        ax[1][0].scatter(Dat.keys(), [_.statistic for _ in ks_a],
+        mkr = ax[1][0].scatter(Dat.keys(), [_.statistic for _ in ks_a],
                          c=PCOLORS[i],
                          marker=PMARKRS[i],
                          label=rf"${PLABELS[i]}$",
-                         s=1.5)
+                         lw=0,
+                         s=15)
         ax[1][1].scatter(Dat.keys(), [_.statistic for _ in ks_b],
                          c=PCOLORS[i],
                          marker=PMARKRS[i],
-                         s=1.5)
+                         lw=0,
+                         s=15)
         ax[1][2].scatter(Dat.keys(), [_.statistic for _ in ks_l],
                          c=PCOLORS[i],
                          marker=PMARKRS[i],
-                         s=1.5)
+                         lw=0,
+                         s=15)
+        # line, = ax[0][0].plot(range(10))
+        # mkr = ax[1][0].scatter(range(10), range(10))
+        handles.append(line)
+        hmarkrs.append(mkr)
+        labels.append(rf"${PLABELS[i]}$")
 
     _d = dict(fontsize=18,
               verticalalignment='bottom',
               horizontalalignment='right',
               color='black')
+    # ax[1][0].legend(ncol=3, markerscale=1.5, columnspacing=1.)
     ax[1][0].text(
         0.1,
         0.9,
@@ -601,7 +609,6 @@ def fig8():
         transform=ax[1][0].transAxes,
         **_d
     )
-    ax[1][0].legend(ncol=3, markerscale=3)
     ax[1][1].text(
         0.1,
         0.9,
@@ -636,7 +643,14 @@ def fig8():
     fig.legend(handles=handles,
                labels=labels,
                bbox_to_anchor=(0.5, 0.98),
-               loc='upper center', ncol=(len(labels) + 1)//2)
+               columnspacing=.5,
+               loc='upper right', ncol=(len(labels) + 1)//2)
+    fig.legend(handles=hmarkrs,
+               labels=labels,
+               bbox_to_anchor=(0.5, 0.98),
+               markerscale=1.5,
+               columnspacing=.5,
+               loc='upper left', ncol=(len(labels) + 1)//2)
     plt.savefig("fig/paper/fig8.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig8.png", bbox_inches="tight")
     plt.close("all")
