@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from collections import namedtuple, defaultdict
-from functools import partial
+from collections import namedtuple
 import pythia8mc
 import numpy as np
 from scipy import stats
