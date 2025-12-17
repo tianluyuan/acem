@@ -626,7 +626,7 @@ def fig8():
                           ls=PLINEST[i],
                           linewidth=1.5)
             ax[0][j].legend(loc='lower left')
-            ax[0][j].text(list(Dat.keys())[-25], _ysw[-25]*1.05, r'50%', fontsize=12, rotation=10)
+            ax[0][j].text(list(Dat.keys())[-25], _ysw[-25]*1.07, r'50%', fontsize=12, rotation=10)
 
         if particle in ["ELECTRON", "KAON+", "OMEGA-"]:
             # place text above the sup line

@@ -157,7 +157,7 @@ class RWParametrization1D(ModelBase):
                energy: float,
                size: None | int=None) -> Shower1D | list[Shower1D]:
         """
-        Samples an individual Shower1D object for a specified
+        Samples an individual or list of Shower1D for a specified
         particle type and energy. Only ltot is randomly sampled.
 
         Parameters
