@@ -497,8 +497,8 @@ def fig7():
 
 def fig8():
     def get_ssr(Dat, _pdg):
-        ssrs = []
-        ssrw = []
+        dist = []
+        dsrw = []
         for ene in Dat.keys():
             darr = Dat[ene]
             nbins = int(darr[0,509])
@@ -508,7 +508,7 @@ def fig8():
             _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, darr[:,nbins+3])
             parr = stats.gamma(
                 Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
-            ssrs.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
+            dist.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
             if particle in ["ELECTRON", "PION+", "PROTON"]:
                 rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
                 gamm = rwth._shape(_pdg, ene)
@@ -516,9 +516,56 @@ def fig8():
                 _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.kwds['scale'])
                 parr = stats.gamma(
                     Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
-                ssrw.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
+                dsrw.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
 
-        return ssrs, ssrw
+        return dist, dsrw
+
+    def get_wasserstein_dist(Dat, _pdg):
+        ws_distances = []
+        ws_distances_rw = []
+
+        for ene in Dat.keys():
+            darr = Dat[ene]
+            nbins = int(darr[0, 509])
+            bwidt = darr[0, 508]
+
+            bin_centers = (np.arange(nbins) + 0.5) * bwidt
+
+            current_ws = []
+
+            Xa, Ya = np.meshgrid(np.arange(0, nbins) * bwidt, darr[:, nbins + 2])
+            _, Yb = np.meshgrid(np.arange(0, nbins) * bwidt, darr[:, nbins + 3])
+
+            parr = stats.gamma(
+                Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad / Yb
+            ).pdf(Xa)
+
+            for i in range(len(darr)):
+                try:
+                    dist = stats.wasserstein_distance(bin_centers, bin_centers, darr[i, :nbins] / darr[i, 501], parr[i])
+                    current_ws.append(dist)
+                except ValueError:
+                    pass
+
+            ws_distances.append(np.array(current_ws))
+
+            if particle in ["ELECTRON", "PION+", "PROTON"]:
+                current_ws_rw = []
+                rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
+                gamm = rwth._shape(_pdg, ene)
+
+                Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.args[0])
+                _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.kwds['scale'])
+                parr = stats.gamma(
+                    Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
+
+                for i in range(len(darr)):
+                    dist_rw = stats.wasserstein_distance(bin_centers, bin_centers, darr[i, :nbins] / darr[i, 501], parr[0])
+                    current_ws_rw.append(dist_rw)
+
+                ws_distances_rw.append(np.array(current_ws_rw))
+
+        return ws_distances, ws_distances_rw
 
     def icolumn(particle):
         if particle in ["ELECTRON", "PHOTON"]:
@@ -555,24 +602,39 @@ def fig8():
                               loader=util.load_npy,
                               clean=False)
         _pdg = pdg.FLUKA2PDG[particle]
-        ssrs, ssrw = get_ssr(Dat, _pdg)
+        dist, dsrw = get_wasserstein_dist(Dat, _pdg)
 
-        if ssrw:
+        _ys0 = [np.nanmedian(_) for _ in dist]
+        line, = ax[0][j].plot(Dat.keys(),
+                              _ys0,
+                              c=PCOLORS[i],
+                              ls=PLINEST[i],
+                              linewidth=1.5)
+        _ys1 = [np.nanquantile(_, 0.95) for _ in dist]
+        ax[0][j].plot(Dat.keys(),
+                      _ys1,
+                      c=PCOLORS[i],
+                      ls=PLINEST[i],
+                      linewidth=0.5)
+        if dsrw:
             extra_label = "(RW 2013)" if particle in ["ELECTRON", "PHOTON"] else "(Rädel 2012)"
+            _ysw = [np.median(_) for _ in dsrw]
             ax[0][j].plot(Dat.keys(),
-                          [np.median(_) for _ in ssrw],
+                          _ysw,
                           c='gray',
                           label=rf"${PLABELS[i]}$ {extra_label}",
                           ls=PLINEST[i],
                           linewidth=1.5)
-            ax[0][j].legend()
-        line, = ax[0][j].plot(Dat.keys(),
-                              [np.nanmedian(_) for _ in ssrs],
-                              c=PCOLORS[i],
-                              ls=PLINEST[i],
-                              linewidth=1.5)
+            ax[0][j].legend(loc='lower left')
+            ax[0][j].text(list(Dat.keys())[-25], _ysw[-25]*1.05, r'50%', fontsize=12, rotation=10)
+
+        if particle in ["ELECTRON", "KAON+", "OMEGA-"]:
+            # place text above the sup line
+            ax[0][j].text(list(Dat.keys())[-25], _ys0[-25]*1.01, r'50%', fontsize=12, rotation=-10)
+            ax[0][j].text(list(Dat.keys())[-25], _ys1[-25]*1.01, r'95%', fontsize=12, rotation=-10)
         ax[0][j].set_xscale('log')
         ax[0][j].set_xlim(1., 1.e6)
+        ax[0][j].set_ylim(1., 1.e3)
 
         ks_l, ks_a, ks_b = get_ks(Dat, _pdg)
         mkr = ax[1][0].scatter(Dat.keys(), [_.statistic for _ in ks_a],
@@ -634,7 +696,7 @@ def fig8():
     # )
 
     ax[0][0].set_yscale('log')
-    ax[0][0].set_ylabel('SSR')
+    ax[0][0].set_ylabel(r'$W_1$ [cm]')
     ax[1][0].set_ylim(ymin=0.)
     ax[1][0].set_ylabel('KS statistic')
     [ax[1][_].set_xscale('log') for _ in range(3)]
