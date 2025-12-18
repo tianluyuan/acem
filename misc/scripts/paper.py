@@ -339,7 +339,7 @@ def fig5():
         ax[0][i].text(
             0.96,  # Slight offset from the right edge (1.0 is the exact edge)
             0.04,  # Slight offset from the bottom edge (0.0 is the exact bottom)
-            f"{lab} (MC)",
+            f"{lab} (FLUKA)",
             transform=ax[0][i].transAxes,
             fontsize=18,
             verticalalignment='bottom',
