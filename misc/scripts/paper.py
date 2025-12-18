@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import numpy as np
+from typing import NamedTuple
 from scipy import stats, optimize
 from matplotlib import pyplot as plt
+from matplotlib.ticker import FuncFormatter
 
-from shosim import model, util, maths, pdg
+from shosim import model, util, maths, pdg, media
 
 plt.style.use("paper-sans")
-prop_cycle = plt.rcParams["axes.prop_cycle"]
-colors = prop_cycle.by_key()["color"]
+COLORS = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 DLDX_LABEL = r"\text{d}\hat{\ell}/\text{d}x"
 LTOT_LABEL = r"\hat{\ell}_\text{tot}"
@@ -15,9 +16,51 @@ SPGP_LABEL = r"s_p g_p"
 
 PARTICLES = ["ELECTRON", "PHOTON", "PION+", "KAON+", "KAONSHRT", "KAONLONG", "PROTON", "NEUTRON", "SIGMA+", "SIGMA-", "LAMBDA", "XSIZERO", "XSI-", "OMEGA-"]
 PLABELS = [r"e^-", r"\gamma", r"\pi^+", r"K^+", r"K^0_S", r"K^0_L", "p", "n", r"\Sigma^+", r"\Sigma^-", r"\Lambda^0", r"\Xi^0", r"\Xi^-", r"\Omega^-"]
-PCOLORS = [colors[0], colors[0], colors[1], colors[1], colors[1], colors[1], colors[2], colors[2], colors[2], colors[2], colors[3], colors[3], colors[3], colors[3]]
+PCOLORS = [COLORS[0], COLORS[0], COLORS[1], COLORS[1], COLORS[1], COLORS[1], COLORS[2], COLORS[2], COLORS[2], COLORS[2], COLORS[3], COLORS[3], COLORS[3], COLORS[3]]
 PLINEST = ["-", "--"] + ["-", "--", ":", "-."] * 3
 PMARKRS = ['o', 's'] + ['o', 's', '^', 'v'] * 3
+
+
+class ParticleStyle(NamedTuple):
+    label: str
+    color: str
+    line: str
+    marker: str
+
+
+PSTYLEDICT = {_p: ParticleStyle(_l, _c, _n, _m) for _p, _l, _c, _n, _m in zip(PARTICLES,
+                                                                              PLABELS,
+                                                                              PCOLORS,
+                                                                              PLINEST,
+                                                                              PMARKRS)}
+
+
+def plot_subparticles(ax,
+                      xs,
+                      par,
+                      pids,
+                      enes,
+                      vprods,
+                      minimum=10):
+    ys = np.zeros_like(xs)
+    emiss = 0
+
+    for i, (pid, energy, vprod) in enumerate(zip(pids, enes, vprods)):
+        if energy < minimum:
+            emiss += energy
+            continue
+        sho = par.sample(pid, energy)
+        y = sho.dldx(xs - vprod.pz()/10.)
+        ys += y
+        ax.plot(xs, y, linestyle='--', color=COLORS[0] if np.abs(pid) in [11, 22] else COLORS[1], linewidth=1)
+
+    # catch the remainder
+    if emiss > minimum:
+        sho = par.sample(pid, emiss)
+        y = sho.dldx(xs)
+        ys += y
+        ax.plot(xs, y, linestyle=':', color='grey', linewidth=1)
+    return ys
 
 
 def fig1():
@@ -33,7 +76,7 @@ def fig1():
     nbins = int(df1.iloc[0]["Zbins"])
     xs = (np.arange(nbins) + 0.5) * df1.iloc[0]["Zwidth"]
     for _ in range(4):
-        plt.plot(xs, np1[_, :nbins], color=colors[_], label=rf"Run {_ + 1} (FLUKA)")
+        plt.plot(xs, np1[_, :nbins], color=COLORS[_], label=rf"Run {_ + 1} (FLUKA)")
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
@@ -96,14 +139,14 @@ def fig2():
     for _ in range(nruns):
         plt.plot(xs,
                  np1[_, :nbins] / np1[_, nbins+1],
-                 color=colors[0],
+                 color=COLORS[0],
                  label=rf"1 TeV $e^-$ ({nruns} runs)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
     for _ in range(nruns):
         plt.plot(xs,
                  np2[_, :nbins] / np2[_, nbins+1],
-                 color=colors[1],
+                 color=COLORS[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} runs)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
@@ -130,7 +173,7 @@ def fig2():
             density=True,
             histtype="step",
             label=rf"{ene/1000:.3g} TeV $e^-$",
-            color=colors[0],
+            color=COLORS[0],
             linestyle=lst
         )
         plt.hist(
@@ -139,7 +182,7 @@ def fig2():
             density=True,
             histtype="step",
             label=rf"{ene/1000:.3g} TeV $\pi^+$",
-            color=colors[1],
+            color=COLORS[1],
             linestyle=lst
         )
 
@@ -234,7 +277,7 @@ def fig4():
                  stats.gamma(
                      a_em,
                      scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/b_em).pdf(xs),
-                 color=colors[0],
+                 color=COLORS[0],
                  label=rf"1 TeV $e^-$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
@@ -249,7 +292,7 @@ def fig4():
                  stats.gamma(
                      a_pi,
                      scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/b_pi).pdf(xs),
-                 color=colors[1],
+                 color=COLORS[1],
                  label=rf"1 TeV $\pi^+$ ({nruns} fits)" if _==0 else None,
                  linewidth=0.5,
                  alpha=0.5)
@@ -264,8 +307,8 @@ def fig4():
     plt.savefig("fig/paper/fig4a.png", bbox_inches="tight")
 
     plt.clf()
-    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)", markersize=2.5)
-    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=colors[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)", markersize=2.5)
+    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=COLORS[0], label=rf"1 TeV $e^-$ ({nruns} fits)", markersize=2.5)
+    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=COLORS[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)", markersize=2.5)
     plt.xlabel(r"$a'$")
     plt.ylabel(r"$b'$")
     plt.xlim(0, 1)
@@ -332,7 +375,7 @@ def fig5():
 def fig6():
     plt.clf()
     # copied over from ltot.py
-    for particle, _c in zip(["ELECTRON", "PION+"], colors[:2]):
+    for particle, _c in zip(["ELECTRON", "PION+"], COLORS[:2]):
         if particle in ['ELECTRON', 'PHOTON']:
             form = stats.norminvgauss
             # 2x shape, loc, scale
@@ -404,8 +447,8 @@ def fig6():
     ul = 1.02*bins[-1]
     xs = np.linspace(bins[0], ul, 1000)
     par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-    plt.plot(xs, par.ltot_dist(11, ene).pdf(xs), "--", color=colors[0], label=r"1 TeV $e^-$ (model)")
-    plt.plot(xs, par.ltot_dist(211, ene).pdf(xs), ":", color=colors[1], label=r"1 TeV $\pi^+$ (model)")
+    plt.plot(xs, par.ltot_dist(11, ene).pdf(xs), "--", color=COLORS[0], label=r"1 TeV $e^-$ (model)")
+    plt.plot(xs, par.ltot_dist(211, ene).pdf(xs), ":", color=COLORS[1], label=r"1 TeV $\pi^+$ (model)")
 
     plt.legend(loc="upper left")
     plt.xlim(bins[0], ul)
@@ -446,7 +489,7 @@ def fig7():
                  stats.gamma(
                      _a,
                      scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/_b).pdf(xs),
-                 color=colors[i],
+                 color=COLORS[i],
                  label=rf"1 TeV ${tex}$ (fit)",
                  linestyle=lst)
     
@@ -481,8 +524,8 @@ def fig7():
     ul = 1.03*bins[-1]
     xs = np.linspace(bins[0], ul, 1000)
     par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fkp], ene).pdf(xs), "--", color=colors[0], label=rf"10 GeV ${tex1}$ (model)")
-    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fks], ene).pdf(xs), ":", color=colors[1], label=rf"10 GeV ${tex2}+$ (model)")
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fkp], ene).pdf(xs), "--", color=COLORS[0], label=rf"10 GeV ${tex1}$ (model)")
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fks], ene).pdf(xs), ":", color=COLORS[1], label=rf"10 GeV ${tex2}+$ (model)")
 
     plt.legend(loc="upper left")
     plt.xlim(bins[0], ul)
@@ -716,14 +759,138 @@ def fig8():
     plt.savefig("fig/paper/fig8.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig8.png", bbox_inches="tight")
     plt.close("all")
+
+
+def fig9():
+    from pythia import simulate_neutrino_dis
+
+    enu = 1e5
+    seed = 26
+    events = simulate_neutrino_dis(num_events=2,
+                                   init_energy_gev=enu,
+                                   init_pdg=12,
+                                   seed=seed)
+    rng = np.random.default_rng(seed)
+    parm = model.Parametrization1D(media.IC3, random_state=rng)
+    xs = np.arange(0, 3000.1, 10)
+
+    _wide, _height = plt.gcf().get_size_inches()
+    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=True, figsize=(_wide*2.2, _height*1.))
+    for i, event in enumerate(events):
+        ys = plot_subparticles(ax[i],
+                               xs,
+                               parm,
+                               event.hadron_pids,
+                               event.hadron_energies,
+                               event.hadron_vprods,
+                               minimum=10)
+
+        ax[i].plot(xs, ys, c=COLORS[1], label=rf'$\sum {DLDX_LABEL}_{{had.}}$')
+
+        # EM showers
+        yg = plot_subparticles(ax[i],
+                               xs,
+                               parm,
+                               [22]*len(event.gamma_energies),
+                               event.gamma_energies,
+                               event.gamma_vprods,
+                               minimum=1.)
+        ye = plot_subparticles(ax[i],
+                               xs,
+                               parm,
+                               [11]*len(event.electron_energies),
+                               event.electron_energies,
+                               event.electron_vprods,
+                               minimum=1.)
+        if np.any(ye+yg):
+            ax[i].plot(xs, ye+yg, c=COLORS[0], label=rf'$\sum {DLDX_LABEL}_{{EM}}$')
+        ax[i].plot(xs, ys + yg + ye, c='k', label=rf'Total ({"CC" if event.is_cc else "NC"})')
+        ax[i].set_xlabel(r'$x$ [cm]')
+        ax[i].legend()
+        ax[i].set_ylim(ymin=0)
+
+    ax[0].set_xlim(0, 1500)
+    # plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x/100:.2g}'))
+    ax[0].set_ylabel(rf'${DLDX_LABEL}$')
+    # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
+    plt.savefig("fig/paper/fig9.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig9.png", bbox_inches="tight")
+
+
+def fig10():
+    from pythia import simulate_neutrino_dis
+
+    enu = 1e5
+    seed = 26
+    events = simulate_neutrino_dis(num_events=80,
+                                   init_energy_gev=enu,
+                                   init_pdg=12,
+                                   seed=seed)
+    rng = np.random.default_rng(seed)
+    parm = model.Parametrization1D(media.IC3, random_state=rng)
+    xs = np.arange(0, 3000.1, 10)
+
+    _wide, _height = plt.gcf().get_size_inches()
+    fig, ax = plt.subplots(nrows=10, ncols=8, sharey=True, sharex=True, figsize=(_wide*8.8, _height*11.),
+                           gridspec_kw={'hspace': 0.1, 'wspace': 0.1})
+    for i, event in enumerate(events):
+        ii = i // 8
+        jj = i % 8
+        ys = plot_subparticles(ax[ii][jj],
+                               xs,
+                               parm,
+                               event.hadron_pids,
+                               event.hadron_energies,
+                               event.hadron_vprods,
+                               minimum=10)
+
+        ax[ii][jj].plot(xs, ys, c=COLORS[1])
+
+        # EM showers
+        yg = plot_subparticles(ax[ii][jj],
+                               xs,
+                               parm,
+                               [22]*len(event.gamma_energies),
+                               event.gamma_energies,
+                               event.gamma_vprods,
+                               minimum=1.)
+        ye = plot_subparticles(ax[ii][jj],
+                               xs,
+                               parm,
+                               [11]*len(event.electron_energies),
+                               event.electron_energies,
+                               event.electron_vprods,
+                               minimum=1.)
+        if np.any(ye+yg):
+            ax[ii][jj].plot(xs, ye+yg, c=COLORS[0])
+        ax[ii][jj].plot(xs, ys + yg + ye, c='k')# label=rf'{"CC" if event.is_cc else "NC"}')
+        if not event.is_cc:
+            for spine in ax[ii][jj].spines.values():
+                spine.set_color('blue')
+
+        # ax[ii][jj].set_xlabel(r'$x$ [cm]')
+        # ax[ii][jj].legend(loc='upper right', fontsize=24)
+        ax[ii][jj].tick_params(axis='both', which='major', labelsize=28)
+
+    ax[0][0].set_xlim(0, 1500)
+    ax[0][0].set_yscale('log')
+    ax[0][0].set_ylim(100., 2e5)
+    ax[0][0].get_xaxis().set_major_formatter(FuncFormatter(lambda x, _: f'{x/100:.2g}'))
+    # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
+    fig.supxlabel(r"$x$ [m]", fontsize=60, y=0.085)
+    fig.supylabel(rf'${DLDX_LABEL}$', fontsize=60, x=0.08)
+    plt.savefig("fig/paper/fig10.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig10.png", bbox_inches="tight")
     
     
 if __name__ == "__main__":
-    # fig8()
-    # fig7()
-    # fig6()
-    # fig5()
+    fig10()
+    fig9()
+    fig8()
+    fig7()
+    fig6()
+    fig5()
     fig4()
-    # fig3()
-    # fig2()
-    # fig1()
+    fig3()
+    fig2()
+    fig1()

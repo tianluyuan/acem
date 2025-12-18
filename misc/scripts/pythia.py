@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 
-def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, target_pdg=2212):
+def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, target_pdg=2212, seed=12345):
     """
     Simulates electron neutrino - proton Deep Inelastic Scattering (DIS)
     using Pythia8 via the pythia8mc package.
@@ -68,7 +68,7 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
 
     # 4. Set random seed for reproducibility (optional)
     pythia.readString("Random:setSeed = on")
-    pythia.readString("Random:seed = 12345") # You can change this seed
+    pythia.readString(f"Random:seed = {seed}") # You can change this seed
 
     # 5. Initialize Pythia for the run with the above settings
     # This checks all settings and prepares for event generation.
@@ -198,35 +198,17 @@ def plot_subparticles(xs,
     return ys
 
 
-def pid_with_fallback(pid, available_pids):
-    if pid < 100:
-        return pid
-
-    available_pids = np.asarray(available_pids)
-    if 100 <= pid < 1000:
-        sel = (100 <= available_pids) & (available_pids < 1000)
-    else:
-        sel = available_pids >= 1000
-
-    diff = np.inf
-    spid = None
-    for _pid in available_pids[sel]:
-        this_diff = np.abs(_pid - pid)
-        if this_diff < diff:
-            diff = this_diff
-            spid = _pid
-    return spid
-
-
 if __name__ == '__main__':
     plt.style.use('present')
     enu = 10000
     pnu = 12
+    seed = 1234
     events = simulate_neutrino_dis(num_events=200,
                                    init_energy_gev=enu,
-                                   init_pdg=pnu)
+                                   init_pdg=pnu,
+                                   seed=seed)
 
-    rng = np.random.default_rng(1234)
+    rng = np.random.default_rng(seed)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     parw = model.RWParametrization1D(media.IC3, random_state=rng)
 
