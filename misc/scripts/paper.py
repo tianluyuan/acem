@@ -808,10 +808,10 @@ def fig9():
         ax[i].set_xlabel(r'$x$ [cm]')
         ax[i].legend()
         ax[i].set_ylim(ymin=0)
+        ax[i].set_ylabel(rf'${DLDX_LABEL}$')
 
     ax[0].set_xlim(0, 1500)
     # plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x/100:.2g}'))
-    ax[0].set_ylabel(rf'${DLDX_LABEL}$')
     # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
     plt.savefig("fig/paper/fig9.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig9.png", bbox_inches="tight")
