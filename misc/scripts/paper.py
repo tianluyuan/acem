@@ -785,7 +785,7 @@ def fig9():
                                event.hadron_vprods,
                                minimum=10)
 
-        ax[i].plot(xs, ys, c=COLORS[1], label=rf'$\sum {DLDX_LABEL}_{{had.}}$')
+        ax[i].plot(xs, ys, c=COLORS[1], label=rf'$\sum {DLDX_LABEL}_{{\text{{had.}}}}$')
 
         # EM showers
         yg = plot_subparticles(ax[i],
@@ -803,7 +803,7 @@ def fig9():
                                event.electron_vprods,
                                minimum=1.)
         if np.any(ye+yg):
-            ax[i].plot(xs, ye+yg, c=COLORS[0], label=rf'$\sum {DLDX_LABEL}_{{EM}}$')
+            ax[i].plot(xs, ye+yg, c=COLORS[0], label=rf'$\sum {DLDX_LABEL}_{{\text{{EM}}}}$')
         ax[i].plot(xs, ys + yg + ye, c='k', label=rf'Total ({"CC" if event.is_cc else "NC"})')
         ax[i].set_xlabel(r'$x$ [cm]')
         ax[i].legend()
@@ -831,11 +831,12 @@ def fig10():
     xs = np.arange(0, 3000.1, 10)
 
     _wide, _height = plt.gcf().get_size_inches()
-    fig, ax = plt.subplots(nrows=10, ncols=8, sharey=True, sharex=True, figsize=(_wide*8.8, _height*11.),
+    _nrows, _ncols = 10, 8
+    fig, ax = plt.subplots(nrows=_nrows, ncols=_ncols, sharey=True, sharex=True, figsize=(_wide*8.8, _height*11.),
                            gridspec_kw={'hspace': 0.1, 'wspace': 0.1})
     for i, event in enumerate(events):
-        ii = i // 8
-        jj = i % 8
+        ii = i // _ncols
+        jj = i % _ncols
         ys = plot_subparticles(ax[ii][jj],
                                xs,
                                parm,
