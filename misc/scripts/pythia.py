@@ -10,13 +10,22 @@ from matplotlib.ticker import FuncFormatter
 
 def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, target_pdg=2212, seed=12345):
     """
-    Simulates electron neutrino - proton Deep Inelastic Scattering (DIS)
-    using Pythia8 via the pythia8mc package.
+    Simulates collisions using Pythia8 via the pythia8mc package.
 
-    Args:
-        num_events (int): The number of events to generate.
-        init_energy_gev (float): The energy of the incoming electron neutrino in GeV.
-                                     Default is 100 TeV (100,000 GeV).
+    Parameters
+    ----------
+        num_events (int): Number of collision events to generate.
+        init_energy_gev (float): Energy of the incoming beam particle (Beam A) in GeV.
+            Default is 100 TeV (1e5 GeV).
+        init_pdg (int): PDG ID of the incoming particle (e.g., 12 for nu_e, 14 for nu_mu).
+        target_pdg (int): PDG ID of the target nucleon or nucleus. 
+            Use 2212 for Proton, 2112 for Neutron
+        seed (int): Random seed for reproducibility.
+
+    Returns
+    -------
+        events: List of Events which is a collection of the properties of the interaction
+    outgoing hadrons, electrons and gammas
     """
 
     # 1. Initialize Pythia
