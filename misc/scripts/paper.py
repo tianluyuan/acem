@@ -264,13 +264,13 @@ def fig4():
     plt.savefig("fig/paper/fig4a.png", bbox_inches="tight")
 
     plt.clf()
-    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)", markersize=1.5)
-    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=colors[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)", markersize=1.5)
+    plt.plot(maths.aprime(np.asarray(a_ems)), maths.bprime(np.asarray(b_ems)), '.', color=colors[0], label=rf"1 TeV $e^-$ ({nruns} fits)", markersize=2.5)
+    plt.plot(maths.aprime(np.asarray(a_pis)), maths.bprime(np.asarray(b_pis)), '.', color=colors[1], label=rf"1 TeV $\pi^+$ ({nruns} fits)", markersize=2.5)
     plt.xlabel(r"$a'$")
     plt.ylabel(r"$b'$")
     plt.xlim(0, 1)
     plt.ylim(0, 1)
-    plt.legend()
+    plt.legend(markerscale=4)
     plt.savefig("fig/paper/fig4b.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig4b.png", bbox_inches="tight")
     plt.close("all")
@@ -719,11 +719,11 @@ def fig8():
     
     
 if __name__ == "__main__":
-    fig8()
+    # fig8()
     # fig7()
     # fig6()
     # fig5()
-    # fig4()
+    fig4()
     # fig3()
     # fig2()
     # fig1()
