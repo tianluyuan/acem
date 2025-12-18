@@ -815,6 +815,7 @@ def fig9():
     # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
     plt.savefig("fig/paper/fig9.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig9.png", bbox_inches="tight")
+    plt.close("all")
 
 
 def fig10():
@@ -882,6 +883,7 @@ def fig10():
     fig.supylabel(rf'${DLDX_LABEL}$', fontsize=60, x=0.08)
     plt.savefig("fig/paper/fig10.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig10.png", bbox_inches="tight")
+    plt.close("all")
     
     
 if __name__ == "__main__":
