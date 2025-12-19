@@ -80,7 +80,7 @@ def fig1():
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
-             label=r"1 TeV $e^-$"+"\n(RW 2013) 2013)", linestyle="--")
+             label=r"1 TeV $e^-$"+"\n(RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")
     plt.xlim(0, 1500)
@@ -108,7 +108,7 @@ def fig1():
 
     ul = bins[-1]*1.02
     xs = np.linspace(bins[0], ul, 1000)
-    plt.plot(xs, rwth.ltot_dist(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013) 2013)")
+    plt.plot(xs, rwth.ltot_dist(11, ene).pdf(xs), "k--", label=r"1 TeV $e^-$ (RW 2013)")
     plt.plot(xs, rwth.ltot_dist(211, ene).pdf(xs), "k:", label=r"1 TeV $\pi^+$ (Rädel 2012)")
 
     plt.legend(loc="upper left")
