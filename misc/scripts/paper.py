@@ -865,13 +865,23 @@ def fig10():
                                minimum=1.)
         if np.any(ye+yg):
             ax[ii][jj].plot(xs, ye+yg, c=COLORS[0])
-        ax[ii][jj].plot(xs, ys + yg + ye, c='k')# label=rf'{"CC" if event.is_cc else "NC"}')
+        ax[ii][jj].plot(xs, ys + yg + ye, c='k')
         if not event.is_cc:
             for spine in ax[ii][jj].spines.values():
                 spine.set_color('blue')
 
         # ax[ii][jj].set_xlabel(r'$x$ [cm]')
-        # ax[ii][jj].legend(loc='upper right', fontsize=24)
+        _d = dict(fontsize=28,
+                  verticalalignment='bottom',
+                  horizontalalignment='right',
+                  color='black')
+        ax[ii][jj].text(
+            0.95,
+            0.87,
+            "CC" if event.is_cc else "NC",
+            transform=ax[ii][jj].transAxes,
+            **_d
+        )
         ax[ii][jj].tick_params(axis='both', which='major', labelsize=28)
 
     ax[0][0].set_xlim(0, 1500)
