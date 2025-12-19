@@ -12,7 +12,22 @@ from .pdg import FLUKA2PDG
 from .maths import a, b, BSpline3D
 
 
-def ltot_scale(m0: media.Medium, m1: media.Medium):
+def ltot_scale(m0: media.Medium, m1: media.Medium) -> float:
+    """
+    Computes the ltot rescaling factor to convert from one medium to another of differing density and index of refraction.
+
+    Parameters
+    ----------
+    m0 : Medium
+        the medium to convert from
+    m1 : Medium
+        the medium to convert to
+
+    Returns
+    -------
+    scale : float
+        scale factor to be applied to the total, weighted Cherenkov track length
+    """
     return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
 
 
@@ -23,8 +38,10 @@ class Shower1D(NamedTuple):
 
     Parameters
     ----------
-    ltot (float) : The total Cherenkov-weighted track length
-    shape (rv_frozen) : A frozen scipy.stats distribution that describes the shape of the shower profile
+    ltot : float
+        The total Cherenkov-weighted track length
+    shape : rv_frozen
+        A frozen scipy.stats distribution that describes the shape of the shower profile
     """
     ltot: float
     shape: rv_frozen
@@ -125,10 +142,9 @@ class RWParametrization1D(ModelBase):
 
     def __init__(self, medium: media.Medium,
                  random_state: Generator | None=None):
-        self.medium = medium
-        self._rng = np.random.default_rng() if random_state is None else random_state
-        self._scale = ltot_scale(self.G4_MEDIUM, self.medium)
-        assert self._scale >= 0.
+        self.medium: media.Medium = medium
+        self._rng: Generator = np.random.default_rng() if random_state is None else random_state
+        self._scale: float = max(ltot_scale(self.G4_MEDIUM, self.medium), 0.)
 
     def _ltot_mean(self, pdg: int, energy: float) -> float:
         return self.MEAN_ALPHAS[pdg] * energy**self.MEAN_BETAS[pdg] * self._scale
@@ -149,13 +165,16 @@ class RWParametrization1D(ModelBase):
 
         Parameters
         ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
+        pdg : int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy : float
+            The energy of the particle in GeV
 
         Returns
         -------
-        rv_frozen: A frozen normal distribution object from scipy.stats.
+        ltot_dist : rv_frozen
+            A frozen normal distribution object from scipy.stats.
         """
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
@@ -166,13 +185,16 @@ class RWParametrization1D(ModelBase):
 
         Parameters
         ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
+        pdg : int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy : float
+            The energy of the particle in GeV
 
         Returns
         -------
-        Shower1D: A 1D shower profile using mean(ltot); shape is invariant given energy
+        mean_1d : Shower1D
+            A 1D shower profile using mean(ltot); shape is invariant given energy
         """
         return Shower1D(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
 
@@ -186,15 +208,19 @@ class RWParametrization1D(ModelBase):
 
         Parameters
         ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
-        size: int or None. If None, a single Shower1D is returned, otherwise
-        a list of Shower1Ds of length size is returned
+        pdg: int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy: float
+            The energy of the particle in GeV
+        size: int or None
+            If None, a single Shower1D is returned, otherwise a list of Shower1Ds of
+            length size is returned
 
         Returns
         -------
-        Shower1D samples (see size above)
+        sample: Shower1D or list[Shower1D]
+            samples (see size above)
         """
         _size = 1 if size is None else size
         _samp = [Shower1D(_, self._shape(pdg, energy))
@@ -212,18 +238,23 @@ class Parametrization1D(ModelBase):
     
     Parameters
     ----------
-    medium: a shosim.media.Medium object with fixed density and nphase
-    converter: callable that converts PDG codes to those available (optional)
-    random_state: a numpy random number generator (optional)
+    medium: Medium
+        A shosim.media.Medium object with fixed density and nphase
+    converter: Callable[[int], int], or None, optional
+        A function callable that takes a PDG code and returns one as proxy for use
+    random_state: Generator, or None, optional
+        A numpy random number generator
 
     Returns
     -------
-    ret: a Parametrization1D object
+    ret: Parameterization1D
+        A Parametrization1D object
 
     Notes
     -----
     Based on: TBD
 
+    
     >>> a = Parametrization1D(media.ICE)
     >>> x = np.linspace(0, 1, 100)
     >>> y = np.linspace(0, 1, 100)
@@ -275,9 +306,7 @@ class Parametrization1D(ModelBase):
         self.medium: media.Medium = medium
         self._rng: Generator = np.random.default_rng() if random_state is None else random_state
         self._converter: Callable = self._default_converter if converter is None else converter
-        self._scale: float = ltot_scale(self.FLUKA_MEDIUM, self.medium)
-        if self._scale < 0.:
-            raise RuntimeError("The medium definition results in a negative rescale factor")
+        self._scale: float = max(ltot_scale(self.FLUKA_MEDIUM, self.medium), 0.)
     
     def _default_converter(self, pdg: int):
         """
@@ -290,6 +319,19 @@ class Parametrization1D(ModelBase):
 
         User-defined converters can be passed as an argument 
         during instantiation
+
+        Parameters
+        ----------
+        pdg : int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy : float
+            The energy of the particle in GeV
+
+        Returns
+        -------
+        proxy_pdg : int
+            abs(pdg) or mixture for K0
         """
         _pdg = abs(pdg)
 
@@ -311,14 +353,16 @@ class Parametrization1D(ModelBase):
 
         Parameters
         ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
+        pdg : int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy : float
+            The energy of the particle in GeV
 
         Returns
         -------
-        rv_frozen: A frozen skewnormal (EM) or NIG (otherwise) distribution
-        object from scipy.stats.
+        ltot_dist : rv_frozen
+            A frozen skewnormal (EM) or NIG (otherwise) distribution object
 
         
         >>> a = Parametrization1D(media.ICE)
@@ -357,13 +401,16 @@ class Parametrization1D(ModelBase):
 
         Parameters
         ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
+        pdg : int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy : float
+            The energy of the particle in GeV
 
         Returns
         -------
-        Shower1D: The average 1D shower profile
+        mean_ab : Shower1D
+            The average 1D shower profile (see note)
 
         Note
         ----
@@ -383,17 +430,21 @@ class Parametrization1D(ModelBase):
 
         Parameters
         ----------
-        pdg: The PDG (Particle Data Group) identifier of the particle. This integer
-             specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
-        energy: The energy of the particle in GeV
-        size: int or None. If None, a single Shower1D is returned, otherwise
-        a list of Shower1Ds of length size is returned
+        pdg : int
+            The PDG (Particle Data Group) identifier of the particle. This integer
+            specifies the particle type (e.g., 2112 for neutron, 2212 for proton).
+        energy : float
+            The energy of the particle in GeV
+        size : int or None (optional)
+            If None, a single Shower1D is returned, otherwise a list of Shower1Ds of
+        length size is returned
 
         Returns
         -------
-        Shower1D samples (see size above)
+        sample : Shower1D or list[Shower1D]
+            A sample or list of multiple samples (see size above)
 
-
+        
         >>> a = Parametrization1D(media.ICE)
         >>> rng = np.random.default_rng(1)
         >>> for pdg in a.THETAS:
