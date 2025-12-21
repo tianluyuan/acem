@@ -36,8 +36,16 @@ if __name__ == '__main__':
         _nbins = int(_row['Zbins'])
         xs = np.arange(_nbins) * _row['Zwidth']
         ltot = _row['ltot']
-        plt.plot(xs, a[args.istart+_, :_nbins], color=colors[_], label=f'{ltot}')
-        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=media.IC3.lrad/_row['gammaB']), color=colors[_], linestyle='--')
+        c = colors[_ % len(colors)]
+        # from diorama import maths
+        # if maths.aprime(_row['gammaA']) < 0.9:
+        #     continue
+        # print(maths.aprime(_row['gammaA']), maths.bprime(_row['gammaB']))
+        plt.plot(xs, a[args.istart+_, :_nbins], color=c, label=f'{ltot}')
+        plt.plot(xs,
+                 ltot*stats.gamma.pdf(xs, _row['gammaA'],
+                                      scale=media.IC3.lrad/_row['gammaB']),
+                 color=c, linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
     plt.xlim(0, 3000)
@@ -56,9 +64,13 @@ if __name__ == '__main__':
         _row = xdf.iloc[_]
         _nbins = int(_row['Zbins'])
         xs = np.arange(_nbins) * _row['Zwidth']
-        plt.plot(xs, x[_, :_nbins], color=colors[_-args.istart])
+        c = colors[_-args.istart % len(colors)]
+        plt.plot(xs, x[_, :_nbins], color=c)
         ltot = _row['ltot']
-        plt.plot(xs, ltot*stats.gamma.pdf(xs, _row['gammaA'], scale=media.IC3.lrad/_row['gammaB']), color=colors[_-args.istart], linestyle='--')
+        plt.plot(xs,
+                 ltot*stats.gamma.pdf(xs, _row['gammaA'],
+                                      scale=media.IC3.lrad/_row['gammaB']),
+                 color=c, linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
     plt.xlim(0, 3000)
