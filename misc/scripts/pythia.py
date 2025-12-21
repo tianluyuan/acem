@@ -3,7 +3,7 @@ from collections import namedtuple
 import pythia8mc
 import numpy as np
 from scipy import stats
-from shosim import model, media
+from diorama import model, media
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 

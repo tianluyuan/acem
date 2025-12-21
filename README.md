@@ -1,15 +1,15 @@
-[![Status](https://github.com/tianluyuan/shosim/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/shosim/actions)
+[![Status](https://github.com/tianluyuan/diorama/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/diorama/actions)
 
-# shosim
+# diorama
 
-`shosim` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
+`diorama` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
 
 ## Installation
 
-You can install `shosim` directly from PyPI: [TBD]
+You can install `diorama` directly from PyPI: [TBD]
 
 ```bash
-pip install shosim
+pip install diorama
 ```
 
 Alternatively, clone this repository and from the directory run `pip install .` or to work with scripts in `misc/` use `pip install .[misc]`. The latter will allow you to run checks including plots like this
@@ -22,7 +22,7 @@ cd misc/scripts/
 It's also possible to install directly from github with
 
 ```bash
-pip install git+https://github.com/pathtorepo/shosim
+pip install git+https://github.com/pathtorepo/diorama
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ pip install git+https://github.com/pathtorepo/shosim
 Here is an example of how to import the models and use the package:
 
 ```python
-from shosim import model, media
+from diorama import model, media
 
 par = model.Parametrization1D(media.ICE)
 

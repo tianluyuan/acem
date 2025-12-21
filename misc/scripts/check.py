@@ -4,9 +4,9 @@ import numpy as np
 import scipy as sp
 import sys
 from matplotlib import pyplot as plt
-from shosim.model import Parametrization1D, RWParametrization1D
-from shosim import media, util
-from shosim.pdg import PDG2FLUKA
+from diorama.model import Parametrization1D, RWParametrization1D
+from diorama import media, util
+from diorama.pdg import PDG2FLUKA
 
 
 if __name__=='__main__':

@@ -4,8 +4,8 @@ from scipy import stats, optimize
 from matplotlib import pyplot as plt
 import argparse
 from importlib.resources import files, as_file
-from shosim.util import load_batch
-from shosim.maths import sxt, qnt, sxt, qrt
+from diorama.util import load_batch
+from diorama.maths import sxt, qnt, sxt, qrt
 plt.style.use('present')
 
 
@@ -108,6 +108,6 @@ if __name__ == '__main__':
 
         pdict = {f'p{_i}': _par for _i, _par in enumerate(par_fits)}
         pdict['s'] = sgns
-        outf = files("shosim") / "resources" / "ltot" / f"{particle}.npz"
+        outf = files("diorama") / "resources" / "ltot" / f"{particle}.npz"
         with as_file(outf) as fpath:
             np.savez(fpath, **pdict)
