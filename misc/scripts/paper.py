@@ -468,8 +468,8 @@ def fig7():
     fks = "KAONSHRT"
     tex1 = pdg.PDG2LATEX[pdg.FLUKA2PDG[fkp]]
     tex2 = pdg.PDG2LATEX[pdg.FLUKA2PDG[fks]]
-    np1 = util.load_npy(f"fluka/DataOutputs_{fkp}/{fkp}_{util.format_energy(ene)}.csv", True)
-    np2 = util.load_npy(f"fluka/DataOutputs_{fks}/{fks}_{util.format_energy(ene)}.csv", True)
+    np1 = util.load_npy(f"fluka/DataOutputs_{fkp}/{fkp}_{util.format_energy(ene)}.csv", False)
+    np2 = util.load_npy(f"fluka/DataOutputs_{fks}/{fks}_{util.format_energy(ene)}.csv", False)
 
     # sorted by numpeaks
     np1 = np1[np.argsort(np1[:,507])]
@@ -710,7 +710,7 @@ def fig9():
                                    init_energy_gev=enu,
                                    init_pdg=12,
                                    seed=26)
-    rng = np.random.default_rng(3)
+    rng = np.random.default_rng(81)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     xs = np.arange(0, 3000.1, 10)
 
@@ -766,7 +766,7 @@ def fig10():
                                    init_energy_gev=enu,
                                    init_pdg=12,
                                    seed=26)
-    rng = np.random.default_rng(3)
+    rng = np.random.default_rng(81)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     xs = np.arange(0, 3000.1, 10)
 
