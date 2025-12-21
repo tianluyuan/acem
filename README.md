@@ -6,7 +6,7 @@
 
 ## Installation
 
-You can install `diorama` directly from PyPI: [TBD]
+You can install `diorama` directly from [PyPI](https://pypi.org/project/diorama/).
 
 ```bash
 pip install diorama
