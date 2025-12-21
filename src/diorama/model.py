@@ -56,6 +56,10 @@ class ModelBase(ABC):
         pass
 
     @abstractmethod
+    def mean(self, pdg: int, energy: float) -> Shower1D:
+        pass
+
+    @abstractmethod
     def sample(self,
                pdg: int,
                energy: float,
