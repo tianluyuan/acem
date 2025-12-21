@@ -706,12 +706,11 @@ def fig9():
     from pythia import simulate_neutrino_dis
 
     enu = 1e5
-    seed = 26
     events = simulate_neutrino_dis(num_events=2,
                                    init_energy_gev=enu,
                                    init_pdg=12,
-                                   seed=seed)
-    rng = np.random.default_rng(seed)
+                                   seed=26)
+    rng = np.random.default_rng(3)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     xs = np.arange(0, 3000.1, 10)
 
@@ -763,12 +762,11 @@ def fig10():
     from pythia import simulate_neutrino_dis
 
     enu = 1e5
-    seed = 26
     events = simulate_neutrino_dis(num_events=80,
                                    init_energy_gev=enu,
                                    init_pdg=12,
-                                   seed=seed)
-    rng = np.random.default_rng(seed)
+                                   seed=26)
+    rng = np.random.default_rng(3)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     xs = np.arange(0, 3000.1, 10)
 
@@ -838,13 +836,13 @@ def fig10():
     
     
 if __name__ == "__main__":
-    # fig10()
-    # fig9()
-    # fig8()
+    fig10()
+    fig9()
+    fig8()
     fig7()
-    # fig6()
-    # fig5()
-    # fig4()
-    # fig3()
-    # fig2()
-    # fig1()
+    fig6()
+    fig5()
+    fig4()
+    fig3()
+    fig2()
+    fig1()

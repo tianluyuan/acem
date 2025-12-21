@@ -454,7 +454,7 @@ class Parametrization1D(ModelBase):
 
         
         >>> a = Parametrization1D(media.ICE)
-        >>> rng = np.random.default_rng(1)
+        >>> rng = np.random.default_rng(4)
         >>> for pdg in a.THETAS:
         ...     for en in np.linspace(1, 6, 10):
         ...         samp = a.THETAS[pdg].sample(en, 100, random_state=rng)
