@@ -79,7 +79,7 @@ def fig1():
         plt.plot(xs, np1[_, :nbins], color=COLORS[_], label=rf"Run {_ + 1} (FLUKA)")
 
     rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-    plt.plot(xs, rwth.mean_1d(11, ene).dldx(xs), c="k",
+    plt.plot(xs, rwth.mean(11, ene).dldx(xs), c="k",
              label=r"1 TeV $e^-$"+"\n(RW 2013)", linestyle="--")
     plt.ylabel(rf'${DLDX_LABEL}$')
     plt.xlabel(r"$x$ [cm]")

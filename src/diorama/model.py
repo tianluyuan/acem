@@ -178,7 +178,7 @@ class RWParametrization1D(ModelBase):
         """
         return stats.norm(self._ltot_mean(pdg, energy), self._ltot_sigma(pdg, energy))
     
-    def mean_1d(self, pdg: int, energy: float) -> Shower1D:
+    def mean(self, pdg: int, energy: float) -> Shower1D:
         """
         Retrieves the average Shower1D object for a specified
         particle type and energy.
@@ -193,8 +193,12 @@ class RWParametrization1D(ModelBase):
 
         Returns
         -------
-        mean_1d : Shower1D
+        mean : Shower1D
             A 1D shower profile using mean(ltot); shape is invariant given energy
+
+        Notes
+        -----
+        Since the shape is fixed this simply returns Shower1D(mean(ltot), shape)
         """
         return Shower1D(self._ltot_mean(pdg, energy), self._shape(pdg, energy))
 
@@ -394,7 +398,7 @@ class Parametrization1D(ModelBase):
         sdist_args[-2] *= self._scale
         return sdist(*sdist_args)
 
-    def mean_ab(self, pdg: int, energy: float) -> Shower1D:
+    def mean(self, pdg: int, energy: float) -> Shower1D:
         """
         Retrieves the average Shower1D object for a specified
         particle type and energy.
@@ -409,12 +413,12 @@ class Parametrization1D(ModelBase):
 
         Returns
         -------
-        mean_ab : Shower1D
+        mean : Shower1D
             The average 1D shower profile (see note)
 
         Note
         ----
-        The shape is taken as the average over parameters a and b, which differs
+        The shape is taken as the average over parameters a' and b', which differs
         from the average over 1/ltot * dl/dx
         """
         ap, bp = self.THETAS[self._converter(pdg)].mean(np.log10(energy))
