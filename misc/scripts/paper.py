@@ -468,8 +468,8 @@ def fig7():
     fks = "KAONSHRT"
     tex1 = pdg.PDG2LATEX[pdg.FLUKA2PDG[fkp]]
     tex2 = pdg.PDG2LATEX[pdg.FLUKA2PDG[fks]]
-    np1 = util.load_npy(f"fluka/DataOutputs_{fkp}/{fkp}_{util.format_energy(ene)}.csv", False)
-    np2 = util.load_npy(f"fluka/DataOutputs_{fks}/{fks}_{util.format_energy(ene)}.csv", False)
+    np1 = util.load_npy(f"fluka/DataOutputs_{fkp}/{fkp}_{util.format_energy(ene)}.csv", True)
+    np2 = util.load_npy(f"fluka/DataOutputs_{fks}/{fks}_{util.format_energy(ene)}.csv", True)
 
     # sorted by numpeaks
     np1 = np1[np.argsort(np1[:,507])]
@@ -539,77 +539,6 @@ def fig7():
 
 
 def fig8():
-    def get_ssr(Dat, _pdg):
-        dist = []
-        dsrw = []
-        for ene in Dat.keys():
-            darr = Dat[ene]
-            nbins = int(darr[0,509])
-            bwidt = darr[0,508]
-
-            Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, darr[:,nbins+2])
-            _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, darr[:,nbins+3])
-            parr = stats.gamma(
-                Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
-            dist.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
-            if particle in ["ELECTRON", "PION+", "PROTON"]:
-                rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-                gamm = rwth._shape(_pdg, ene)
-                Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.args[0])
-                _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.kwds['scale'])
-                parr = stats.gamma(
-                    Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
-                dsrw.append(((darr[:,:500]/darr[:,501][:,None] - parr)**2).sum(axis=1))
-
-        return dist, dsrw
-
-    def get_wasserstein_dist(Dat, _pdg):
-        ws_distances = []
-        ws_distances_rw = []
-
-        for ene in Dat.keys():
-            darr = Dat[ene]
-            nbins = int(darr[0, 509])
-            bwidt = darr[0, 508]
-
-            bin_centers = (np.arange(nbins) + 0.5) * bwidt
-
-            current_ws = []
-
-            Xa, Ya = np.meshgrid(np.arange(0, nbins) * bwidt, darr[:, nbins + 2])
-            _, Yb = np.meshgrid(np.arange(0, nbins) * bwidt, darr[:, nbins + 3])
-
-            parr = stats.gamma(
-                Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad / Yb
-            ).pdf(Xa)
-
-            for i in range(len(darr)):
-                try:
-                    dist = stats.wasserstein_distance(bin_centers, bin_centers, darr[i, :nbins] / darr[i, 501], parr[i])
-                    current_ws.append(dist)
-                except ValueError:
-                    pass
-
-            ws_distances.append(np.array(current_ws))
-
-            if particle in ["ELECTRON", "PION+", "PROTON"]:
-                current_ws_rw = []
-                rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
-                gamm = rwth._shape(_pdg, ene)
-
-                Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.args[0])
-                _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.kwds['scale'])
-                parr = stats.gamma(
-                    Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
-
-                for i in range(len(darr)):
-                    dist_rw = stats.wasserstein_distance(bin_centers, bin_centers, darr[i, :nbins] / darr[i, 501], parr[0])
-                    current_ws_rw.append(dist_rw)
-
-                ws_distances_rw.append(np.array(current_ws_rw))
-
-        return ws_distances, ws_distances_rw
-
     def icolumn(particle):
         if particle in ["ELECTRON", "PHOTON"]:
             return 0
@@ -617,14 +546,14 @@ def fig8():
             return 1
         return 2
 
-    def get_ks(Dat, _pdg):
+    def get_ks(Dat, pid):
         par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM,
                                       random_state=np.random.default_rng(1))
         ks_l = []
         ks_a = []
         ks_b = []
         for ene in Dat.keys():
-            shos = par.sample(_pdg, ene, 1000)
+            shos = par.sample(pid, ene, 1000)
             ltots = [_.ltot for _ in shos]
             aprim = [_.shape.args[0] for _ in shos]
             bprim = [par.medium.lrad / _.shape.kwds['scale'] for _ in shos]
@@ -632,6 +561,18 @@ def fig8():
             ks_a.append(stats.ks_2samp(Dat[ene][:, 502], aprim))
             ks_b.append(stats.ks_2samp(Dat[ene][:, 503], bprim))
         return ks_l, ks_a, ks_b
+
+    def get_w1_loop(Dat, pid):
+        ws_distances = []
+        ws_distances_rw = []
+
+        for ene in Dat.keys():
+            ws_distances.append(util.get_wasserstein_dist(Dat[ene]))
+
+            if pid in [11, 211, 2212]:
+                ws_distances_rw.append(util.get_wasserstein_rw(Dat[ene], pid, ene))
+
+        return ws_distances, ws_distances_rw
     
     plt.clf()
     _wide, _height = plt.gcf().get_size_inches()
@@ -644,8 +585,8 @@ def fig8():
         Dat = util.load_batch(f'fluka/DataOutputs_{particle}/*.csv',
                               loader=util.load_npy,
                               clean=False)
-        _pdg = pdg.FLUKA2PDG[particle]
-        dist, dsrw = get_wasserstein_dist(Dat, _pdg)
+        pid = pdg.FLUKA2PDG[particle]
+        dist, dsrw = get_w1_loop(Dat, pid)
 
         _ys0 = [np.nanmedian(_) for _ in dist]
         line, = ax[0][j].plot(Dat.keys(),
@@ -679,7 +620,7 @@ def fig8():
         ax[0][j].set_xlim(1., 1.e6)
         ax[0][j].set_ylim(1., 1.e3)
 
-        ks_l, ks_a, ks_b = get_ks(Dat, _pdg)
+        ks_l, ks_a, ks_b = get_ks(Dat, pid)
         mkr = ax[1][0].scatter(Dat.keys(), [_.statistic for _ in ks_a],
                          c=PCOLORS[i],
                          marker=PMARKRS[i],
@@ -897,13 +838,13 @@ def fig10():
     
     
 if __name__ == "__main__":
-    fig10()
-    fig9()
-    fig8()
+    # fig10()
+    # fig9()
+    # fig8()
     fig7()
-    fig6()
-    fig5()
-    fig4()
-    fig3()
-    fig2()
-    fig1()
+    # fig6()
+    # fig5()
+    # fig4()
+    # fig3()
+    # fig2()
+    # fig1()

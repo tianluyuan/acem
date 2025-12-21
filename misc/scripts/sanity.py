@@ -22,7 +22,7 @@ if __name__ == '__main__':
                         help='label for the file of interest')
     parser.add_argument('--rlabel', type=Path, default='reference',
                         help='label for the reference file')
-    parser.add_argument('--clean', type=bool, default=False,
+    parser.add_argument('--clean', default=False, action='store_true',
                         help='remove outliers in data')
     parser.add_argument('--savefig', default=None, type=str,
                         help='Save plots to specified directory')
@@ -40,6 +40,8 @@ if __name__ == '__main__':
         # from diorama import maths
         # if maths.aprime(_row['gammaA']) < 0.9:
         #     continue
+        # if (_row['gammaA'] - 1) *media.IC3.lrad/_row['gammaB'] < 2e3:
+        #     continue
         # print(maths.aprime(_row['gammaA']), maths.bprime(_row['gammaB']))
         plt.plot(xs, a[args.istart+_, :_nbins], color=c, label=f'{ltot}')
         plt.plot(xs,
@@ -48,7 +50,7 @@ if __name__ == '__main__':
                  color=c, linestyle='--')
     plt.ylabel('dl/dx')
     plt.xlabel('[cm]')
-    plt.xlim(0, 3000)
+    plt.xlim(0, 5000)
     plt.legend()
     if args.savefig:
         plt.savefig(f'{args.savefig}/dldx.pdf', bbox_inches='tight')

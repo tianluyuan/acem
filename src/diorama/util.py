@@ -1,12 +1,60 @@
 from pathlib import Path
 from collections import OrderedDict
-import numpy as np
 from typing import Callable, TypeVar
+import numpy as np
+from scipy import stats
+from diorama import model
 try:
     import pandas as pd
     HAVE_PANDAS = True
 except ImportError:
     HAVE_PANDAS = False
+
+
+def get_wasserstein_dist(darr):
+    nbins = int(darr[0, 509])
+    bwidt = darr[0, 508]
+
+    bin_centers = (np.arange(nbins) + 0.5) * bwidt
+
+    current_ws = []
+
+    Xa, Ya = np.meshgrid(np.arange(0, nbins) * bwidt, darr[:, nbins + 2])
+    _, Yb = np.meshgrid(np.arange(0, nbins) * bwidt, darr[:, nbins + 3])
+
+    parr = stats.gamma(
+        Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad / Yb
+    ).pdf(Xa)
+
+    for i in range(len(darr)):
+        try:
+            dist = stats.wasserstein_distance(bin_centers, bin_centers, darr[i, :nbins] / darr[i, 501], parr[i])
+            current_ws.append(dist)
+        except ValueError:
+            current_ws.append(np.nan)
+
+    return np.array(current_ws)
+
+
+def get_wasserstein_rw(darr, pid, ene):
+    nbins = int(darr[0, 509])
+    bwidt = darr[0, 508]
+
+    bin_centers = (np.arange(nbins) + 0.5) * bwidt
+    rwth = model.RWParametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
+    gamm = rwth._shape(pid, ene)
+
+    Xa, Ya = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.args[0])
+    _, Yb = np.meshgrid(np.arange(0, nbins)*bwidt, gamm.kwds['scale'])
+    parr = stats.gamma(
+        Ya, scale=model.Parametrization1D.FLUKA_MEDIUM.lrad/Yb).pdf(Xa)
+
+    current_ws_rw = []
+    for i in range(len(darr)):
+        dist_rw = stats.wasserstein_distance(bin_centers, bin_centers, darr[i, :nbins] / darr[i, 501], parr[0])
+        current_ws_rw.append(dist_rw)
+
+    return np.array(current_ws_rw)
 
 
 def get_header(fpath: str | Path):
@@ -43,7 +91,11 @@ def load_npy(fpath: str | Path, clean: bool=True) -> np.ndarray:
         return a
 
     lo, hi = np.quantile(a[:, nzbins+1], [0.005, 1.0])
-    return a[~np.isnan(a[:, nzbins+2]) & (a[:, nzbins+1] >= lo) & (a[:, nzbins+1] <= hi)]
+    w1 = get_wasserstein_dist(a)
+    return a[~np.isnan(a[:, nzbins+2]) &
+             (a[:, nzbins+1] >= lo) &
+             (a[:, nzbins+1] <= hi) &
+             (w1 < np.nanquantile(w1, 0.998))]
 
 
 def load_csv(fpath: str | Path, clean: bool=True) -> 'pd.DataFrame | pd.Series':
@@ -62,7 +114,8 @@ def load_csv(fpath: str | Path, clean: bool=True) -> 'pd.DataFrame | pd.Series':
 
     df.dropna(subset='gammaA', inplace=True)
     lo, hi = np.quantile(df['ltot'], [0.005, 1.0])
-    return df[(df['ltot'] >= lo) & (df['ltot'] <= hi)]
+    w1 = get_wasserstein_dist(df.to_numpy())
+    return df[(df['ltot'] >= lo) & (df['ltot'] <= hi) & (w1 < np.nanquantile(w1, 0.998))]
 
 
 T = TypeVar('T')

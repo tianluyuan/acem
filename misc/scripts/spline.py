@@ -54,7 +54,6 @@ def likelihood_test(a_sample,b_sample,E,BSpl):
     # print('... normalization:', norm_factor)
     return BSpl(a_sample,b_sample,E).sum() - (np.size(a_sample) * np.log(norm_factor))
 
-
 '''
 Constructs difference matrix of specified size and order, used for penalizing differences
 '''
