@@ -1,8 +1,8 @@
 [![Status](https://github.com/tianluyuan/acem/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/acem/actions)
 
-# acem
+# ACEM: Approximate Cherenkov Emission Model
 
-`acem` (Approximate Cherenkov emission model) is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
+`acem` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
 
 ## Installation
 
