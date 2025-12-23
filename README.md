@@ -39,3 +39,8 @@ shos = par.sample(211, 1e3, 100)
 ```
 
 `shos` will be a list of `Shower1D` objects, which is a simple container that consists of the amplitude and 1D shape of the Cherenkov-weighted track length (units are in cm). Its `.dldx(xs)` method can be used to evaluate the shower profile at some given distance(s) `xs` from the start position.
+
+## Example
+The 1D models are based on [FLUKA](https://www.fluka.eu/Fluka/www/html/fluka.php?) simulations. As an example, when used in combination with a hadronization library such as [PYTHIA8](https://pythia.org/), it can be used to generate neutrino DIS shower profiles.
+
+<img width="5861" height="2974" alt="fig9" src="https://github.com/user-attachments/assets/db34e002-9217-4bd0-a655-db20028a9747" />
