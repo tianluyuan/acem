@@ -837,12 +837,8 @@ def fig10():
     
     
 if __name__ == "__main__":
-    try:
-        _n = [int(_) for _ in sys.argv[1:]]
-    except IndexError:
-        _n = list(range(1, 11))
+    _n = [int(_) for _ in sys.argv[1:]] if sys.argv[1:] else list(range(1, 11))
     for i in _n:
-        # Construct the function name string and look it up in the global scope
         func = globals().get(f"fig{i}")
         if func:
             func()
