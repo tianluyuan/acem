@@ -2,7 +2,7 @@
 
 # acem
 
-`acem` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
+`acem` (Approximate Cherenkov emission model) is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
 
 ## Installation
 
