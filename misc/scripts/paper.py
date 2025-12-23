@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import numpy as np
 from typing import NamedTuple
 from scipy import stats, optimize
@@ -710,7 +711,7 @@ def fig9():
                                    init_energy_gev=enu,
                                    init_pdg=12,
                                    seed=26)
-    rng = np.random.default_rng(81)
+    rng = np.random.default_rng(82)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     xs = np.arange(0, 3000.1, 10)
 
@@ -766,7 +767,7 @@ def fig10():
                                    init_energy_gev=enu,
                                    init_pdg=12,
                                    seed=26)
-    rng = np.random.default_rng(81)
+    rng = np.random.default_rng(82)
     parm = model.Parametrization1D(media.IC3, random_state=rng)
     xs = np.arange(0, 3000.1, 10)
 
@@ -836,13 +837,12 @@ def fig10():
     
     
 if __name__ == "__main__":
-    fig10()
-    fig9()
-    fig8()
-    fig7()
-    fig6()
-    fig5()
-    fig4()
-    fig3()
-    fig2()
-    fig1()
+    try:
+        _n = [int(_) for _ in sys.argv[1:]]
+    except IndexError:
+        _n = list(range(1, 11))
+    for i in _n:
+        # Construct the function name string and look it up in the global scope
+        func = globals().get(f"fig{i}")
+        if func:
+            func()
