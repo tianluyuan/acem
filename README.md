@@ -1,15 +1,15 @@
-[![Status](https://github.com/tianluyuan/diorama/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/diorama/actions)
+[![Status](https://github.com/tianluyuan/acem/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/acem/actions)
 
-# diorama
+# acem
 
-`diorama` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
+`acem` is a Python package designed for generation of Cherenkov light yield profiles from particle showers. One of the main goals is to more accurately include shower-to-shower fluctuations while preserving model simplicity.
 
 ## Installation
 
-You can install `diorama` directly from [PyPI](https://pypi.org/project/diorama/).
+You can install `acem` directly from [PyPI](https://pypi.org/project/acem/).
 
 ```bash
-pip install diorama
+pip install acem
 ```
 
 Alternatively, clone this repository and from the directory run `pip install .` or to work with scripts in `misc/` use `pip install .[misc]`. The latter will allow you to run checks including plots like this
@@ -22,7 +22,7 @@ cd misc/scripts/
 It's also possible to install directly from github with
 
 ```bash
-pip install git+https://github.com/pathtorepo/diorama
+pip install git+https://github.com/pathtorepo/acem
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ pip install git+https://github.com/pathtorepo/diorama
 Here is an example of how to import the models and use the package:
 
 ```python
-from diorama import model, media
+from acem import model, media
 
 par = model.Parametrization1D(media.ICE)
 

@@ -44,7 +44,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[test]
     - name: Test
-      run: pytest --doctest-modules --pyargs diorama
+      run: pytest --doctest-modules --pyargs acem
 
   results:
     runs-on: ubuntu-latest

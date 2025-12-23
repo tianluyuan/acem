@@ -4,7 +4,7 @@ import scipy as sc
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import argparse
-from diorama import maths, util
+from acem import maths, util
 from importlib.resources import files, as_file
 
 ### Fit Parameters
@@ -228,7 +228,7 @@ if __name__ == '__main__':
 
             if res[1] == 0:
                 print('        Saving coefficients')
-                outf = files("diorama") / "resources" / "theta" / f"{particle}.npz"
+                outf = files("acem") / "resources" / "theta" / f"{particle}.npz"
                 with as_file(outf) as fpath:
                     # Shift to convert into a density with coeff_shift
                     # this notation is to match the NdBSpline

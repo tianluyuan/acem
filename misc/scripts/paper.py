@@ -5,7 +5,7 @@ from scipy import stats, optimize
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-from diorama import model, util, maths, pdg, media
+from acem import model, util, maths, pdg, media
 
 plt.style.use("paper-sans")
 COLORS = plt.rcParams["axes.prop_cycle"].by_key()["color"]

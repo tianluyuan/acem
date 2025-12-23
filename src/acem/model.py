@@ -247,7 +247,7 @@ class Parametrization1D(ModelBase):
     Parameters
     ----------
     medium: Medium
-        A diorama.media.Medium object with fixed density and nphase
+        A acem.media.Medium object with fixed density and nphase
     converter: Callable[[int], int], or None, optional
         A function callable that takes a PDG code and returns one as proxy for use
     random_state: Generator, or None, optional
@@ -279,7 +279,7 @@ class Parametrization1D(ModelBase):
     @staticmethod
     def load_ltots() -> dict[int, np.lib.npyio.NpzFile]:
         data = {}
-        for entry in (files("diorama") / "resources" / "ltot").iterdir():
+        for entry in (files("acem") / "resources" / "ltot").iterdir():
             if not entry.is_file():
                 continue
             with as_file(entry) as fpath:
@@ -289,7 +289,7 @@ class Parametrization1D(ModelBase):
     @staticmethod
     def load_thetas() -> dict[int, BSpline3D]:
         data = {}
-        for entry in (files("diorama") / "resources" / "theta").iterdir():
+        for entry in (files("acem") / "resources" / "theta").iterdir():
             if not entry.is_file():
                 continue
             with as_file(entry) as fpath:

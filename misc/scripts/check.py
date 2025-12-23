@@ -4,9 +4,9 @@ import numpy as np
 import scipy as sp
 import sys
 from matplotlib import pyplot as plt
-from diorama.model import Parametrization1D, RWParametrization1D
-from diorama import media, util
-from diorama.pdg import PDG2FLUKA
+from acem.model import Parametrization1D, RWParametrization1D
+from acem import media, util
+from acem.pdg import PDG2FLUKA
 
 
 if __name__=='__main__':

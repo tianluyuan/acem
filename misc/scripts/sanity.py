@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from scipy import stats
 import argparse
 from pathlib import Path
-from diorama import util, media
+from acem import util, media
 plt.style.use('present')
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         xs = np.arange(_nbins) * _row['Zwidth']
         ltot = _row['ltot']
         c = colors[_ % len(colors)]
-        # from diorama import maths
+        # from acem import maths
         # if maths.aprime(_row['gammaA']) < 0.9:
         #     continue
         # if (_row['gammaA'] - 1) *media.IC3.lrad/_row['gammaB'] < 2e3:

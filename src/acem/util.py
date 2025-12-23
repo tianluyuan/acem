@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import Callable, TypeVar
 import numpy as np
 from scipy import stats
-from diorama import model
+from acem import model
 try:
     import pandas as pd
     HAVE_PANDAS = True
