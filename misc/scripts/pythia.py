@@ -2,7 +2,6 @@
 from collections import namedtuple
 import pythia8mc
 import numpy as np
-from scipy import stats
 from acem import model, media
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
@@ -46,7 +45,7 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
     pythia.readString(f"Beams:idA = {init_pdg}")      # Beam A: pdg of incoming particle A
     pythia.readString(f"Beams:eA = {init_energy_gev}") # Beam A energy in GeV
     pythia.readString(f"Beams:idB = {target_pdg}")    # Beam B: proton
-    pythia.readString(f"Beams:eB = 0")  # target at rest
+    pythia.readString("Beams:eB = 0")  # target at rest
 
     # 3. Configure physics processes for CC+NC DIS
     # Turn off other weak processes if you want to be very specific, then enable only W exchange.

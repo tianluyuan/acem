@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import argparse
 from importlib.resources import files, as_file
 from acem.util import load_batch
-from acem.maths import sxt, qnt, sxt, qrt
+from acem.maths import sxt
 plt.style.use('present')
 
 

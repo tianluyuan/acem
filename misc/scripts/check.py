@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 import numpy as np
-import scipy as sp
 import sys
 from matplotlib import pyplot as plt
 from acem.model import Parametrization1D, RWParametrization1D
-from acem import media, util
+from acem import util
 from acem.pdg import PDG2FLUKA
 
 

@@ -189,7 +189,7 @@ def fig2():
 
     plt.legend(loc='upper left')
     plt.xlim(bins[0], bins[-1])
-    # plt.ylim(ymin=5e-8)
+    plt.ylim(1e-5, 1)
     plt.yscale("log")
     plt.ylabel("Density [GeV/cm]")
     plt.xlabel(rf"${LTOT_LABEL}/E$ [cm/GeV]")

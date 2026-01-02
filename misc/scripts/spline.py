@@ -116,15 +116,18 @@ if __name__ == '__main__':
         for i in range(n_a):
             for j in range(c_a):
                 B_a[i,j] = sc.interpolate.BSpline.basis_element(a_k[j:j + deg + 2],extrapolate = False)(x_a[i])
-                if np.isnan(B_a[i,j]) : B_a[i,j] = 0
+                if np.isnan(B_a[i,j]):
+                    B_a[i,j] = 0
         for i in range(n_b):
             for j in range(c_b):
                 B_b[i,j] = sc.interpolate.BSpline.basis_element(b_k[j:j + deg + 2],extrapolate = False)(x_b[i])
-                if np.isnan(B_b[i,j]) : B_b[i,j] = 0
+                if np.isnan(B_b[i,j]):
+                    B_b[i,j] = 0
         for i in range(n_E):
             for j in range(c_E):
                 B_E[i,j] = sc.interpolate.BSpline.basis_element(E_k[j:j + deg + 2],extrapolate = False)(x_E[i])
-                if np.isnan(B_E[i,j]) : B_E[i,j] = 0
+                if np.isnan(B_E[i,j]):
+                    B_E[i,j] = 0
         B_a_pinv = np.linalg.pinv(B_a)
         B_b_pinv = np.linalg.pinv(B_b)
         B_E_pinv = np.linalg.pinv(B_E)
@@ -199,9 +202,9 @@ if __name__ == '__main__':
             H3_s = sc.sparse.coo_array((GH2.data,(GH2.coords[1]//c_b**2, c_E**2 * (GH2.coords[1] % c_b**2) + GH2.coords[0])), shape=(c_a**2,c_b**2 * c_E**2))
 
             # Reshape into (B.T * W * B) matrix form
-            l,m = H3_s.coords
-            p = (l//c_a) % c_a
-            pp = l % c_a
+            ll,m = H3_s.coords
+            p = (ll//c_a) % c_a
+            pp = ll % c_a
             q = (m//(c_b*c_E**2)) % c_b
             qp = (m//c_E**2) % c_b
             r = (m//c_E) % c_E

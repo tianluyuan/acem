@@ -42,3 +42,6 @@ Repository = "https://github.com/tianluyuan/acem"
 where = ["src/"]
 
 [tool.setuptools_scm]
+
+[tool.ruff]
+exclude = ["*.ipynb"]

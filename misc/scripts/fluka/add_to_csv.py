@@ -30,8 +30,8 @@ args = parser.parse_args()
 file_name = args.txt.split('/')[-1]
 # Extract the energy and particle type from file name
 words = file_name.split('_')
-particle_type = words[0] if args.ptype == None else args.ptype
-energy = words[1] if args.energy == None else args.energy
+particle_type = words[0] if args.ptype is None else args.ptype
+energy = words[1] if args.energy is None else args.energy
 
 
 # gather bin data from the txt
@@ -60,7 +60,7 @@ try:
     popt,pcov = sc.optimize.curve_fit(myGamma,xvals,normalized,
                                       p0=(3.5,0.3))
 
-except:
+except: # noqa: E722
     row = list(bin_data) + [energy,ltot*bin_wd[2],np.nan,np.nan,np.nan,np.nan,np.nan,npeaks,bin_wd[2],nbins[2]]
 else:
     row = list(bin_data) + [energy,ltot*bin_wd[2],popt[0],popt[1],pcov[0,0],pcov[1,0],pcov[1,1],npeaks,bin_wd[2],nbins[2]]
