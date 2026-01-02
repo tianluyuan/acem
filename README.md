@@ -1,4 +1,4 @@
-[![Status](https://github.com/tianluyuan/acem/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/acem/actions)
+[![PyPI version](https://img.shields.io/pypi/v/acem)](https://pypi.org/project/acem) [![Status](https://github.com/tianluyuan/acem/actions/workflows/checks.yml/badge.svg)](https://github.com/tianluyuan/acem/actions) [![Python versions](https://img.shields.io/pypi/pyversions/acem)](https://pypi.org/project/acem)
 
 # ACEM: Approximate Cherenkov Emission Model
 
