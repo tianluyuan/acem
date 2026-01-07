@@ -526,7 +526,7 @@ def fig7():
     xs = np.linspace(bins[0], ul, 1000)
     par = model.Parametrization1D(model.Parametrization1D.FLUKA_MEDIUM)
     plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fkp], ene).pdf(xs), "--", color=COLORS[0], label=rf"10 GeV ${tex1}$ (model)")
-    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fks], ene).pdf(xs), ":", color=COLORS[1], label=rf"10 GeV ${tex2}+$ (model)")
+    plt.plot(xs, par.ltot_dist(pdg.FLUKA2PDG[fks], ene).pdf(xs), ":", color=COLORS[1], label=rf"10 GeV ${tex2}$ (model)")
 
     plt.legend(loc="upper left")
     plt.xlim(bins[0], ul)
