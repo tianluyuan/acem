@@ -43,4 +43,4 @@ shos = par.sample(211, 1e3, 100)
 ## Example
 The 1D models are based on [FLUKA](https://www.fluka.eu/Fluka/www/html/fluka.php?) simulations. As an example, when used in combination with a hadronization library such as [PYTHIA8](https://pythia.org/), it can be used to generate neutrino DIS shower profiles.
 
-<img width="5861" height="2974" alt="fig9" src="https://github.com/user-attachments/assets/db34e002-9217-4bd0-a655-db20028a9747" />
+<img width="100%" alt="fig9" src="https://github.com/user-attachments/assets/db34e002-9217-4bd0-a655-db20028a9747">
