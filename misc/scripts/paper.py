@@ -64,6 +64,58 @@ def plot_subparticles(ax,
     return ys
 
 
+def plot_pythia(enu, init_pdg, pythia_seed, random_state):
+    from pythia import simulate_neutrino_dis
+
+    events = simulate_neutrino_dis(num_events=2,
+                                   init_energy_gev=enu,
+                                   init_pdg=init_pdg,
+                                   seed=pythia_seed)
+    parm = model.Parametrization1D(media.IC3, random_state=random_state)
+    xs = np.arange(0, 3000.1, 10)
+
+    _wide, _height = plt.gcf().get_size_inches()
+    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=True, figsize=(_wide*2.2, _height*1.))
+    for i, event in enumerate(events):
+        ys = plot_subparticles(ax[i],
+                               xs,
+                               parm,
+                               event.hadron_pids,
+                               event.hadron_energies,
+                               event.hadron_vprods,
+                               minimum=10)
+
+        ax[i].plot(xs, ys, c=COLORS[1], label=rf'$\sum {DLDX_LABEL}_{{\text{{had.}}}}$')
+
+        # EM showers
+        yg = plot_subparticles(ax[i],
+                               xs,
+                               parm,
+                               [22]*len(event.gamma_energies),
+                               event.gamma_energies,
+                               event.gamma_vprods,
+                               minimum=1.)
+        ye = plot_subparticles(ax[i],
+                               xs,
+                               parm,
+                               [11]*len(event.electron_energies),
+                               event.electron_energies,
+                               event.electron_vprods,
+                               minimum=1.)
+        if np.any(ye+yg):
+            ax[i].plot(xs, ye+yg, c=COLORS[0], label=rf'$\sum {DLDX_LABEL}_{{\text{{EM}}}}$')
+        _label = rf'Total ({"CC" if event.is_cc else "NC"})'
+        if event.is_cc and event.decay_length > 0.:
+            ax[i].text(0.7, 0.93, rf'{event.decay_length/10.:.0f} cm $\tau^-$', fontsize=14, transform=ax[i].transAxes)
+        ax[i].plot(xs, ys + yg + ye, c='k', label=_label)
+        ax[i].set_xlabel(r'$x$ [cm]')
+        ax[i].legend()
+        ax[i].set_ylim(ymin=0)
+        ax[i].set_ylabel(rf'${DLDX_LABEL}$')
+
+    return fig, ax
+
+
 def fig1():
     plt.clf()
     ene = 1.0e3
@@ -704,62 +756,27 @@ def fig8():
 
 
 def fig9():
-    from pythia import simulate_neutrino_dis
-
-    enu = 1e5
-    events = simulate_neutrino_dis(num_events=2,
-                                   init_energy_gev=enu,
-                                   init_pdg=12,
-                                   seed=26)
-    rng = np.random.default_rng(82)
-    parm = model.Parametrization1D(media.IC3, random_state=rng)
-    xs = np.arange(0, 3000.1, 10)
-
-    _wide, _height = plt.gcf().get_size_inches()
-    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=True, figsize=(_wide*2.2, _height*1.))
-    for i, event in enumerate(events):
-        ys = plot_subparticles(ax[i],
-                               xs,
-                               parm,
-                               event.hadron_pids,
-                               event.hadron_energies,
-                               event.hadron_vprods,
-                               minimum=10)
-
-        ax[i].plot(xs, ys, c=COLORS[1], label=rf'$\sum {DLDX_LABEL}_{{\text{{had.}}}}$')
-
-        # EM showers
-        yg = plot_subparticles(ax[i],
-                               xs,
-                               parm,
-                               [22]*len(event.gamma_energies),
-                               event.gamma_energies,
-                               event.gamma_vprods,
-                               minimum=1.)
-        ye = plot_subparticles(ax[i],
-                               xs,
-                               parm,
-                               [11]*len(event.electron_energies),
-                               event.electron_energies,
-                               event.electron_vprods,
-                               minimum=1.)
-        if np.any(ye+yg):
-            ax[i].plot(xs, ye+yg, c=COLORS[0], label=rf'$\sum {DLDX_LABEL}_{{\text{{EM}}}}$')
-        ax[i].plot(xs, ys + yg + ye, c='k', label=rf'Total ({"CC" if event.is_cc else "NC"})')
-        ax[i].set_xlabel(r'$x$ [cm]')
-        ax[i].legend()
-        ax[i].set_ylim(ymin=0)
-        ax[i].set_ylabel(rf'${DLDX_LABEL}$')
-
+    _, ax = plot_pythia(1e5, 12, 26, np.random.default_rng(82))
     ax[0].set_xlim(0, 1500)
-    # plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x/100:.2g}'))
-    # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
+    
     plt.savefig("fig/paper/fig9.pdf", bbox_inches="tight")
     plt.savefig("fig/paper/fig9.png", bbox_inches="tight")
     plt.close("all")
 
 
 def fig10():
+    _, ax = plot_pythia(1e5, 16, 26, np.random.default_rng(82))
+    ax[0].set_xlim(0, 3000)
+    
+    # plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x/100:.2g}'))
+    # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
+
+    plt.savefig("fig/paper/fig10.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig10.png", bbox_inches="tight")
+    plt.close("all")
+    
+    
+def fig11():
     from pythia import simulate_neutrino_dis
 
     enu = 1e5
@@ -831,11 +848,11 @@ def fig10():
     # fig.suptitle(rf'$E_{{\nu_e}} = {enu / 1e3}$ TeV')
     fig.supxlabel(r"$x$ [m]", fontsize=60, y=0.085)
     fig.supylabel(rf'${DLDX_LABEL}$', fontsize=60, x=0.08)
-    plt.savefig("fig/paper/fig10.pdf", bbox_inches="tight")
-    plt.savefig("fig/paper/fig10.png", bbox_inches="tight")
+    plt.savefig("fig/paper/fig11.pdf", bbox_inches="tight")
+    plt.savefig("fig/paper/fig11.png", bbox_inches="tight")
     plt.close("all")
-    
-    
+
+
 if __name__ == "__main__":
     _n = [int(_) for _ in sys.argv[1:]] if sys.argv[1:] else list(range(1, 11))
     for i in _n:

@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 from collections import namedtuple
+import logging
+
 import pythia8mc
 import numpy as np
-from acem import model, media
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
+from acem import model, media
+
+logging.basicConfig(
+    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, target_pdg=2212, seed=12345):
     """
@@ -33,11 +39,11 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
     # pythia = pythia8mc.Pythia(xml_dir='/path/to/pythia8/xmldoc')
     try:
         pythia = pythia8mc.Pythia()
-        print("Pythia8 initialized successfully.")
+        logger.info("Pythia8 initialized successfully.")
     except Exception as e:
-        print(f"Error initializing Pythia8: {e}")
-        print("Please ensure Pythia8 and pythia8mc are correctly installed and configured.")
-        print("You might need to set the PYTHIA8DATA environment variable to point to the xmldoc directory.")
+        logger.error(f"Error initializing Pythia8: {e}\n"
+                     "Please ensure Pythia8 and pythia8mc are correctly installed and configured.\n"
+                     "You might need to set the PYTHIA8DATA environment variable to point to the xmldoc directory.")
         return
 
     # 2. Set up beam parameters
@@ -82,27 +88,28 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
     # This checks all settings and prepares for event generation.
     try:
         if not pythia.init():
-            print("Error: Pythia initialization failed!")
+            logger.error("Pythia initialization failed!")
             pythia.stat() # Print status, may contain error messages
             return
-        print("Pythia initialized for event generation.")
+        logger.info("Pythia initialized for event generation.")
     except RuntimeError as e:
-        print(f"RuntimeError during Pythia initialization: {e}")
-        print("This can happen if XML files are not found or settings are inconsistent.")
+        logger.error(f"RuntimeError during Pythia initialization: {e}\n"
+                     "This can happen if XML files are not found or settings are inconsistent.")
         return
 
     # 6. Event loop
-    print(f"\nStarting event generation for {num_events} events...")
+    logger.info(f"\nStarting event generation for {num_events} events...")
     events = []
-    Event = namedtuple('Event', 'is_cc hadron_pids hadron_energies hadron_vprods electron_energies electron_vprods gamma_energies gamma_vprods'.split())
+    Event = namedtuple('Event',
+                       'decay_length is_cc hadron_pids hadron_energies hadron_vprods electron_energies electron_vprods gamma_energies gamma_vprods'.split())
     for iEvent in range(num_events):
         if not pythia.next():
             # If Pythia.next() returns false, it means the end of the run,
             # often due to reaching the maximum number of errors.
-            print(f"Warning: pythia.next() failed at event {iEvent}, possibly due to errors.")
+            logger.warning(f"pythia.next() failed at event {iEvent}, possibly due to errors.")
             break
 
-        print(f"\n----- Event {iEvent} -----")
+        logger.info(f"\n----- Event {iEvent} -----")
 
         num_final_particles = 0
         num_final_hadrons = 0
@@ -120,6 +127,17 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
         for i in range(pythia.event.size()):
             particle = pythia.event[i] # Get particle from event record
 
+            if primary_lepton is None:
+                if particle.statusAbs() >= 21 and particle.statusAbs() <= 29 and particle.isLepton():
+                    mother = pythia.event[particle.mother1()]
+                    if mother.status() == -21:
+                        primary_lepton = particle
+                        is_cc = primary_lepton.id() != init_pdg
+
+            if particle.idAbs() == 15 and len(particle.daughterList()) > 0:
+                # info on tau decay products
+                logger.info(f'Particle {particle.id()}, index {particle.index()}, yields {[pythia.event[_].id() for _ in particle.daughterList()]}')
+                        
             if particle.isFinal():
                 num_final_particles += 1
                 if particle.isHadron():
@@ -129,30 +147,29 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
                     hadron_vprods.append(particle.vProd())
                 if particle.isLepton():
                     num_final_leptons += 1
-                    if abs(particle.id()) == 11:
+                    if particle.idAbs() == 11:
                         electron_energies.append(particle.e())
                         electron_vprods.append(particle.vProd())
-                    if primary_lepton is None:
-                        # take the first lepton
-                        primary_lepton = particle
-                        is_cc = primary_lepton.id() != init_pdg
+                    elif particle.idAbs() == 13:
+                        logger.warning(f'{particle.e()} GeV muons in final state.')
                 if particle.id() == 22:
                     gamma_energies.append(particle.e())
                     gamma_vprods.append(particle.vProd())
 
-        print(f"Total final particles: {num_final_particles}")
-        print(f"Final hadrons: {num_final_hadrons}")
-        print(f"Final leptons: {num_final_leptons}")
+        logger.info(f"Total final particles: {num_final_particles}")
+        logger.info(f"Final hadrons: {num_final_hadrons}")
+        logger.info(f"Final leptons: {num_final_leptons}")
 
         if primary_lepton:
-            print(f"Primary outgoing lepton: id={primary_lepton.id()}, "
+            logger.info(f"Primary outgoing lepton: id={primary_lepton.id()}, "
                   f"e={primary_lepton.e():.2f} GeV, "
                   f"pT={primary_lepton.pT():.2f} GeV, "
                   f"eta={primary_lepton.eta():.2f}, phi={primary_lepton.phi():.2f}")
         else:
             if (10 < init_pdg <= 18):
                 raise RuntimeError("No final state lepton found when initial particle was a lepton.")
-        events.append(Event(np.asarray(is_cc),
+        events.append(Event((primary_lepton.vDec() - primary_lepton.vProd()).pAbs(),
+                            is_cc,
                             np.asarray(hadron_pids),
                             np.asarray(hadron_energies),
                             np.asarray(hadron_vprods),
@@ -163,17 +180,17 @@ def simulate_neutrino_dis(num_events=10, init_energy_gev=100000.0, init_pdg=12, 
 
         # You can add more detailed analysis here, e.g., listing particles:
         if iEvent < np.inf: # Print details for first few events
-            print("Final state particles (PDG ID, e, pT, eta, phi, status):")
+            logger.info("Final state particles (PDG ID, e, pT, eta, phi, status):")
             for i in range(pythia.event.size()):
                 p = pythia.event[i]
                 if p.isFinal():
-                    print(f"  {p.id()} {p.e():.2f} {p.pT():.2f} {p.eta():.2f} {p.phi():.2f} {p.status()}")
+                    logger.info(f"  {p.id()} {p.e():.2f} {p.pT():.2f} {p.eta():.2f} {p.phi():.2f} {p.status()}")
 
     # 7. Print statistics
     # This includes cross sections, number of accepted/rejected events, etc.
-    print("\n----- Pythia Statistics -----")
+    logger.info("\n----- Pythia Statistics -----")
     pythia.stat()
-    print("---------------------------")
+    logger.info("---------------------------")
     return events
 
 
@@ -221,7 +238,7 @@ if __name__ == '__main__':
     parw = model.RWParametrization1D(media.IC3, random_state=rng)
 
     xs = np.arange(0, 3000.1, 10)
-    print(f"Mean inelasticity: {np.mean([sum(_.hadron_energies) for _ in events])/enu}")
+    logger.info(f"Mean inelasticity: {np.mean([sum(_.hadron_energies) for _ in events])/enu}")
     for i, event in enumerate(events):
         ys = plot_subparticles(xs,
                                parm,
