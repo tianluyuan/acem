@@ -1,9 +1,13 @@
-from pathlib import Path
 from collections import OrderedDict
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from pathlib import Path
+from typing import TypeVar
+
 import numpy as np
 from scipy import stats
+
 from acem import model
+
 try:
     import pandas as pd
     HAVE_PANDAS = True
@@ -72,11 +76,11 @@ def get_dtype(header: list[str]) -> list[tuple[str, str]]:
 
 
 def format_energy(num: float) -> str:
-    num_str = "{:.5e}".format(num)
+    num_str = f"{num:.5e}"
     coefficient, exponent = num_str.split('e')
     exponent2 = exponent.replace('+0', '')
     if exponent2==exponent:
-        raise Exception("Invalid energy for this formating. Energy must be within the interval [1,1e10)")
+        raise ValueError("Invalid energy for this formating. Energy must be within the interval [1,1e10)")
     coefficient = coefficient.ljust(7, '0')
     return f"{coefficient}E{exponent2}"
 

@@ -1,5 +1,6 @@
 from typing import NamedTuple
 
+
 class Medium(NamedTuple):
     """
     A representation of the physical properties of the detection medium.

@@ -1,6 +1,5 @@
-from typing import Dict
 
-PDG2FLUKA: Dict[int, str] = {
+PDG2FLUKA: dict[int, str] = {
     2212: 'PROTON',
     -2212: 'APROTON',
     11: 'ELECTRON',
@@ -61,9 +60,9 @@ PDG2FLUKA: Dict[int, str] = {
     -4332: 'AOMEGAC0'
 }
 
-FLUKA2PDG: Dict[str, int] = {value: key for key, value in PDG2FLUKA.items()}
+FLUKA2PDG: dict[str, int] = {value: key for key, value in PDG2FLUKA.items()}
 
-PDG2LATEX: Dict[int, str] = {
+PDG2LATEX: dict[int, str] = {
     2212: 'p',
     -2212: '\\bar{p}',
     11: 'e^{-}',

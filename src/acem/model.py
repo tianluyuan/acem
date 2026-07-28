@@ -1,15 +1,18 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from importlib.resources import as_file, files
 from pathlib import Path
-from importlib.resources import files, as_file
-from typing import Callable, NamedTuple
+from typing import ClassVar, NamedTuple
+
 import numpy as np
-from numpy.random import Generator
 import numpy.typing as npt
-from scipy import stats, interpolate
+from numpy.random import Generator
+from scipy import interpolate, stats
 from scipy.stats._distn_infrastructure import rv_frozen
+
 from . import media
+from .maths import BSpline3D, a, b
 from .pdg import FLUKA2PDG
-from .maths import a, b, BSpline3D
 
 
 def ltot_scale(m0: media.Medium, m1: media.Medium) -> float:
@@ -74,7 +77,7 @@ class RWParametrization1D(ModelBase):
     Based on: https://doi.org/10.1016/j.astropartphys.2013.01.015
     """
 
-    MEAN_ALPHAS: dict[int, float] = {
+    MEAN_ALPHAS: ClassVar[dict[int, float]] = {
         11: 532.07078881,
         -11: 532.11320598,
         22: 532.08540905,
@@ -85,7 +88,7 @@ class RWParametrization1D(ModelBase):
         -2212: 303.33074914,
         2112: 278.43854660
     }
-    MEAN_BETAS: dict[int, float] = {        
+    MEAN_BETAS: ClassVar[dict[int, float]] = {
         11: 1.00000211,
         -11: 0.99999254,
         22: 0.99999877,
@@ -96,7 +99,7 @@ class RWParametrization1D(ModelBase):
         -2212: 1.04322206,
         2112: 1.05582906
     }
-    SIGMA_ALPHAS: dict[int, float] = {
+    SIGMA_ALPHAS: ClassVar[dict[int, float]] = {
         11: 5.78170887,
         -11: 5.73419669,
         22: 5.66586567,
@@ -107,7 +110,7 @@ class RWParametrization1D(ModelBase):
         -2212: 113.23088104,
         2112: 93.22787137
     }
-    SIGMA_BETAS: dict[int, float] = {
+    SIGMA_BETAS: ClassVar[dict[int, float]] = {
         11: 0.5,
         -11: 0.5,
         22: 0.5,
@@ -118,7 +121,7 @@ class RWParametrization1D(ModelBase):
         -2212: 0.77134060,
         2112: 0.81776503
     }
-    GAMMA_A: dict[int, Callable] = {
+    GAMMA_A: ClassVar[dict[int, Callable]] = {
         11: lambda x: 2.01849 + 1.45469 * np.log10(x),
         -11: lambda x: 2.00035 + 1.45501 * np.log10(x),
         22: lambda x: 2.83923 + 1.34031 * np.log10(x),
@@ -129,7 +132,7 @@ class RWParametrization1D(ModelBase):
         -2212: lambda x: 1.88676 + 0.78825 * np.log10(x),
         2112: lambda x: 1.78137 + 0.87687 * np.log10(x)
     }
-    GAMMA_B: dict[int, float] = {
+    GAMMA_B: ClassVar[dict[int, float]] = {
         11: 0.63207,
         -11: 0.63008,
         22: 0.64526,
