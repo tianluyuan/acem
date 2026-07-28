@@ -1,11 +1,13 @@
-from dataclasses import dataclass
 import itertools
+from dataclasses import dataclass
 from functools import cached_property
+
 import numpy as np
 import numpy.typing as npt
 from numpy.random import Generator
 from scipy import interpolate
 from scipy.optimize import minimize
+
 
 def efn(en, fn, *args):
     return np.exp(fn(np.log10(en), *args))
