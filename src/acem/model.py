@@ -17,7 +17,7 @@ from .pdg import FLUKA2PDG
 
 def ltot_scale(m0: media.Medium, m1: media.Medium) -> float:
     """
-    Computes the ltot rescaling factor to convert from one medium to another of differing density and index of refraction.
+    Computes the ltot rescaling factor to convert from one medium to another of differing density
 
     Parameters
     ----------
@@ -31,7 +31,7 @@ def ltot_scale(m0: media.Medium, m1: media.Medium) -> float:
     scale : float
         scale factor to be applied to the total, weighted Cherenkov track length
     """
-    return m0.density / m1.density * (1. - 1./m1.nphase) * (1. + 1./m1.nphase) / ((1. - 1./m0.nphase) * (1. + 1./m0.nphase))
+    return m0.density / m1.density
 
 
 class Shower1D(NamedTuple):
